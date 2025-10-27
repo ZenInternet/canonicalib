@@ -1,6 +1,6 @@
 ﻿# CanonicaLib
 
-[![Build and Publish](https://github.com/Zen-Internet/canonicalib/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/Zen-Internet/canonicalib/actions/workflows/build-and-publish.yml)
+[![Build and Publish NuGet Packages](https://github.com/ZenInternet/canonicalib/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/ZenInternet/canonicalib/actions/workflows/build-and-publish.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![NuGet](https://img.shields.io/nuget/v/CanonicaLib.DataAnnotations.svg)](https://www.nuget.org/packages/CanonicaLib.DataAnnotations/)
 
