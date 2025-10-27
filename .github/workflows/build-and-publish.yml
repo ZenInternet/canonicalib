@@ -2,7 +2,7 @@ name: Build and Publish NuGet Packages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, next ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
@@ -18,6 +18,7 @@ jobs:
     
     outputs:
       version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       
     steps:
     - name: Checkout code
@@ -30,12 +31,51 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
-    - name: Get version from MinVer
+    - name: Calculate version
       id: version
       run: |
-        VERSION=$(dotnet run --project build-scripts --verbosity quiet || echo "0.1.0-preview.1")
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Version: $VERSION"
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "Latest tag: $LATEST_TAG"
+        
+        # Extract version number (remove 'v' prefix)
+        VERSION=${LATEST_TAG#v}
+        
+        # Split version into parts
+        IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]:-0}
+        
+        # Determine if this is a prerelease build
+        IS_PRERELEASE="false"
+        if [ "${{ github.ref }}" = "refs/heads/next" ]; then
+          IS_PRERELEASE="true"
+          # For next branch, increment minor version and add prerelease suffix
+          NEW_MAJOR=$MAJOR
+          NEW_MINOR=$((MINOR + 1))
+          NEW_PATCH=0
+          
+          # Generate prerelease identifier with commit hash
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          BUILD_NUMBER=${{ github.run_number }}
+          PRERELEASE_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-preview.$BUILD_NUMBER+$COMMIT_HASH"
+          
+          echo "version=$PRERELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          echo "Prerelease version: $PRERELEASE_VERSION"
+        else
+          # For main branch or tags, use standard versioning
+          NEW_MAJOR=$MAJOR
+          NEW_MINOR=$MINOR
+          NEW_PATCH=$((PATCH + 1))
+          
+          RELEASE_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+          
+          echo "version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          echo "Release version: $RELEASE_VERSION"
+        fi
     
     - name: Restore dependencies
       run: dotnet restore
@@ -47,16 +87,46 @@ jobs:
       run: dotnet test --configuration Release --no-build --verbosity normal
     
     - name: Pack CanonicaLib.DataAnnotations
-      run: dotnet pack CanonicaLib.DataAnnotations/CanonicaLib.DataAnnotations.csproj --configuration Release --no-build --output ./packages
+      run: |
+        dotnet pack CanonicaLib.DataAnnotations/CanonicaLib.DataAnnotations.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages \
+          -p:PackageVersion=${{ steps.version.outputs.version }}
     
     - name: Pack CanonicaLib.UI
-      run: dotnet pack CanonicaLib.UI/CanonicaLib.UI.csproj --configuration Release --no-build --output ./packages
+      run: |
+        dotnet pack CanonicaLib.UI/CanonicaLib.UI.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages \
+          -p:PackageVersion=${{ steps.version.outputs.version }}
     
     - name: Upload packages as artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: nuget-packages
+        name: nuget-packages-${{ github.ref_name }}
         path: ./packages/*.nupkg
+
+  publish-prerelease:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/next' && github.event_name == 'push'
+    
+    steps:
+    - name: Download packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages-${{ github.ref_name }}
+        path: ./packages
+    
+    - name: Publish prerelease to NuGet.org
+      run: |
+        echo "Publishing prerelease packages version ${{ needs.build.outputs.version }}"
+        dotnet nuget push ./packages/*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
 
   release:
     needs: build
@@ -78,10 +148,10 @@ jobs:
     - name: Download packages
       uses: actions/download-artifact@v4
       with:
-        name: nuget-packages
+        name: nuget-packages-${{ github.ref_name }}
         path: ./packages
     
-    - name: Calculate next version
+    - name: Calculate next version for tagging
       id: next_version
       run: |
         # Get the latest tag
