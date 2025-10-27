@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CanonicaLib.UI.Extensions
+namespace Zen.CanonicaLib.UI.Extensions
 {
     internal static class StringExtensions
     {

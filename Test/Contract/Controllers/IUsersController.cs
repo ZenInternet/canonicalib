@@ -1,4 +1,4 @@
-﻿using CanonicaLib.DataAnnotations;
+﻿using Zen.CanonicaLib.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;

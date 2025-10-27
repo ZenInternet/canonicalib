@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CanonicaLib.DataAnnotations
+namespace Zen.CanonicaLib.DataAnnotations
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public class EndpointAttribute : PathAttribute

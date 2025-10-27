@@ -1,25 +1,23 @@
-using CanonicaLib.UI.Handlers;
+using Zen.CanonicaLib.UI.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace CanonicaLib.UI
+namespace Zen.CanonicaLib.UI
 {
     public static class WebApplicationExtensions
     {
-        public static IEndpointRouteBuilder UseCanonicaLib(this IEndpointRouteBuilder app, Func<WebApplicationOptions> optionsFactory)
-        {
-            var options = optionsFactory.Invoke();
-
-            app.MapGet($"{options.RootPath}", RootEndpointHandler.HandleRootRequest);
-
-            app.MapGet($"{options.RootPath}/{{**slug}}", AssemblyEndpointHandler.HandleAssemblyRequest);
-
-            return app;
-        }
-
         public static IEndpointRouteBuilder UseCanonicaLib(this IEndpointRouteBuilder app)
         {
-            return app.UseCanonicaLib(() => new WebApplicationOptions());
+            var options = app.ServiceProvider.GetRequiredService<WebApplicationOptions>() ?? new WebApplicationOptions();
+
+            app.MapGet($"{options.RootPath}", UIEndpointHandler.HandleUIRequest);
+
+            app.MapGet($"{options.RootPath}{options.ApiPath}/", AssembliesEndpointHandler.HandleAssembliesRequest);
+
+            app.MapGet($"{options.RootPath}{options.ApiPath}/{{**slug}}", AssemblyEndpointHandler.HandleAssemblyRequest);
+
+            return app;
         }
     }
 }

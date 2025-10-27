@@ -1,5 +1,5 @@
 ﻿
-using CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.DataAnnotations;
 using System;
 using System.Collections.Generic;
 
