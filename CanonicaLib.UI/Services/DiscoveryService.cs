@@ -14,7 +14,7 @@ namespace Zen.CanonicaLib.UI.Services
 
         public Assembly? FindCanonicalAssembly(string assemblyName) => 
             AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(assembly => assembly.GetName().Name == assemblyName &&
+                .FirstOrDefault(assembly => assembly.GetName().Name.ToLowerInvariant() == assemblyName.ToLowerInvariant() &&
                     assembly.GetReferencedAssemblies()
                         .Any(referencedAssembly => referencedAssembly.Name == "Zen.CanonicaLib.DataAnnotations"));
 

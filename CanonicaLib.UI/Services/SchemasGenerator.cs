@@ -27,7 +27,7 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 var schema = SchemaGenerator.GenerateSchema(schemaDefinition, schemaDefinition, assembly);
                     
-                schemas.Add(schemaDefinition.FullName, schema);
+                schemas.Add(schemaDefinition.FullName.Replace(".", "_"), schema);
             }
 
             return schemas;

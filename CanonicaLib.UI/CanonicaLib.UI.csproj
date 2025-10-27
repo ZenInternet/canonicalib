@@ -51,7 +51,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\CanonicaLib.DataAnnotations\CanonicaLib.DataAnnotations.csproj" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
 		<EmbeddedResource Include="Views\**\*.cshtml" />
 	</ItemGroup>

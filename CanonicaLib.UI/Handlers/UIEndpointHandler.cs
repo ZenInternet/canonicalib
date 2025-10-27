@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.Models;
 using Zen.CanonicaLib.UI.Services;
 
@@ -28,7 +29,7 @@ namespace Zen.CanonicaLib.UI.Handlers
                 Assemblies = assemblies.Select(a => new AssemblyInfo 
                 { 
                     Name = a.FullName?.Split(",")[0] ?? "Unknown",
-                    Slug = ConvertToSlug(a.FullName ?? "")
+                    Slug = a.ConvertToSlug()
                 }).ToList(),
                 Options = options
             };
@@ -72,9 +73,5 @@ namespace Zen.CanonicaLib.UI.Handlers
             await context.Response.WriteAsync(stringWriter.ToString());
         }
 
-        private static string ConvertToSlug(string assemblyName)
-        {
-            return assemblyName.ToLowerInvariant().Replace('.', '/');
-        }
     }
 }

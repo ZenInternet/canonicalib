@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Zen.CanonicaLib.UI.Extensions
+﻿namespace Zen.CanonicaLib.UI.Extensions
 {
     internal static class StringExtensions
     {

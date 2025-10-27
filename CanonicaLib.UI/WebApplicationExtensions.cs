@@ -13,6 +13,8 @@ namespace Zen.CanonicaLib.UI
 
             app.MapGet($"{options.RootPath}", UIEndpointHandler.HandleUIRequest);
 
+            app.MapGet($"{options.RootPath}/{{**slug}}", RedoclyEndpointHandler.HandleRedoclyRequest);
+
             app.MapGet($"{options.RootPath}{options.ApiPath}/", AssembliesEndpointHandler.HandleAssembliesRequest);
 
             app.MapGet($"{options.RootPath}{options.ApiPath}/{{**slug}}", AssemblyEndpointHandler.HandleAssemblyRequest);

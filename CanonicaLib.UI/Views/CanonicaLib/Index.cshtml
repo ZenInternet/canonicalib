@@ -1,4 +1,4 @@
-@model Zen.CanonicaLib.UI.Models.AssembliesViewModel
+﻿@model Zen.CanonicaLib.UI.Models.AssembliesViewModel
 @{
     ViewData["Title"] = "CanonicaLib Documentation";
     Layout = "_Layout";
@@ -25,8 +25,15 @@
                             <div class="card assembly-card h-100 shadow-sm">
                                 <div class="card-body">
                                     <h5 class="card-title">@assembly.Name</h5>
-                                    <p class="card-text text-muted">Click to explore the OpenAPI specification</p>
-                                    <a href="@Model.Options.RootPath/ui/@assembly.Slug" class="btn btn-primary">View Documentation</a>
+                                    <p class="card-text text-muted">Interactive API documentation powered by Redocly</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="@Model.Options.RootPath/@assembly.Slug" class="btn btn-primary">
+                                            📖 View Documentation
+                                        </a>
+                                        <a href="@Model.Options.RootPath@Model.Options.ApiPath/@assembly.Slug" class="btn btn-outline-secondary btn-sm">
+                                            📄 OpenAPI JSON
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
