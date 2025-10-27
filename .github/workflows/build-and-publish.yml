@@ -2,10 +2,10 @@ name: Build and Publish NuGet Packages
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -16,6 +16,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,6 +29,13 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Get version from MinVer
+      id: version
+      run: |
+        VERSION=$(dotnet run --project build-scripts --verbosity quiet || echo "0.1.0-preview.1")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
     
     - name: Restore dependencies
       run: dotnet restore
@@ -47,22 +57,135 @@ jobs:
       with:
         name: nuget-packages
         path: ./packages/*.nupkg
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
-    - name: Publish to NuGet.org (on tag)
-      if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Download packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./packages
+    
+    - name: Calculate next version
+      id: next_version
+      run: |
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "Latest tag: $LATEST_TAG"
+        
+        # Extract version number (remove 'v' prefix)
+        VERSION=${LATEST_TAG#v}
+        
+        # Split version into parts
+        IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]:-0}
+        
+        # Determine version bump based on commit messages since last tag
+        COMMITS=$(git log $LATEST_TAG..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+        
+        # Default to patch increment
+        NEW_MAJOR=$MAJOR
+        NEW_MINOR=$MINOR
+        NEW_PATCH=$((PATCH + 1))
+        
+        # Check for breaking changes or major features
+        if echo "$COMMITS" | grep -i "BREAKING CHANGE\|breaking:" >/dev/null; then
+          NEW_MAJOR=$((MAJOR + 1))
+          NEW_MINOR=0
+          NEW_PATCH=0
+        elif echo "$COMMITS" | grep -i "feat\|feature:" >/dev/null; then
+          NEW_MINOR=$((MINOR + 1))
+          NEW_PATCH=0
+        fi
+        
+        NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+        NEW_TAG="v$NEW_VERSION"
+        
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+        echo "Next version: $NEW_VERSION"
+    
+    - name: Create and push tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag ${{ steps.next_version.outputs.new_tag }}
+        git push origin ${{ steps.next_version.outputs.new_tag }}
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.next_version.outputs.new_tag }}
+        release_name: Release ${{ steps.next_version.outputs.new_version }}
+        draft: false
+        prerelease: false
+        body: |
+          ## Changes in ${{ steps.next_version.outputs.new_version }}
+          
+          This release was automatically created from the main branch.
+          
+          ### Commits since last release:
+          ${{ github.event.head_commit.message }}
+    
+    - name: Publish to NuGet.org
       run: |
         dotnet nuget push ./packages/*.nupkg \
           --api-key ${{ secrets.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
+
+  publish-tagged:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     
-    - name: Create GitHub Release (on tag)
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
+    
+    - name: Pack CanonicaLib.DataAnnotations
+      run: dotnet pack CanonicaLib.DataAnnotations/CanonicaLib.DataAnnotations.csproj --configuration Release --no-build --output ./packages
+    
+    - name: Pack CanonicaLib.UI
+      run: dotnet pack CanonicaLib.UI/CanonicaLib.UI.csproj --configuration Release --no-build --output ./packages
+    
+    - name: Publish to NuGet.org (manual tag)
+      run: |
+        dotnet nuget push ./packages/*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate

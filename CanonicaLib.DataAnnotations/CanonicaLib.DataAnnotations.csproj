@@ -12,7 +12,7 @@
 	<!-- NuGet Package Metadata -->
 	<PropertyGroup>
 		<PackageId>Zen.CanonicaLib.DataAnnotations</PackageId>
-		<PackageVersion>0.0.1</PackageVersion>
+		<!-- Remove PackageVersion - MinVer will handle this -->
 		<Title>CanonicaLib Data Annotations</Title>
 		<Description>Core data annotations and attributes for defining canonical contracts in CanonicaLib. Provides PathAttribute, EndpointAttribute, ResponseAttribute and other essential annotations for creating shared library definitions.</Description>
 		<Summary>Core annotations for defining canonical contracts and API definitions</Summary>
@@ -26,7 +26,6 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>annotations;attributes;canonical;contracts;api;dotnet;netstandard</PackageTags>
-		<PackageReleaseNotes>Initial release of CanonicaLib core data annotations for defining canonical contracts.</PackageReleaseNotes>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
