@@ -7,7 +7,7 @@
     <MinVerVerbosity>minimal</MinVerVerbosity>
     
     <!-- Package Icon -->
-    <PackageIcon>logo.png</PackageIcon>
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,9 +17,8 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Include logo.png for all packages -->
   <ItemGroup>
-    <None Include="..\logo.png" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\icon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>
