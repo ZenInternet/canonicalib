@@ -148,7 +148,7 @@ jobs:
     - name: Download packages
       uses: actions/download-artifact@v4
       with:
-        name: nuget-packages-${{ github.ref_name }}
+        name: nuget-packages-${{ github.run_id }}
         path: ./packages
     
     - name: Calculate next version for tagging
