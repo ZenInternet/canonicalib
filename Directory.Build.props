@@ -5,6 +5,10 @@
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerVerbosity>minimal</MinVerVerbosity>
+    
+    <!-- Package and Assembly Icon -->
+    <PackageIcon>logo.png</PackageIcon>
+    <ApplicationIcon>logo.png</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +16,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- Include logo.png for all packages -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)logo.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>
