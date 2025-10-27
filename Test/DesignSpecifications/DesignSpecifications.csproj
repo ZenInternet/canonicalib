@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProjectReference>../../CanonicaLib.UI/CanonicaLib.UI.csproj</ProjectReference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CanonicaLib.UI\CanonicaLib.UI.csproj" />
+    <ProjectReference Include="..\Contract\Contract.csproj" />
+  </ItemGroup>
+
+</Project>
