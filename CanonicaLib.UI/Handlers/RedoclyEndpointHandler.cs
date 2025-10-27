@@ -1,5 +1,13 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Zen.CanonicaLib.UI.Models;
 using Zen.CanonicaLib.UI.Services;
 
 namespace Zen.CanonicaLib.UI.Handlers
@@ -10,6 +18,8 @@ namespace Zen.CanonicaLib.UI.Handlers
         {
             var options = context.RequestServices.GetRequiredService<WebApplicationOptions>() ?? new WebApplicationOptions();
             var discoveryService = context.RequestServices.GetRequiredService<DiscoveryService>();
+            var razorViewEngine = context.RequestServices.GetRequiredService<IRazorViewEngine>();
+            var tempDataProvider = context.RequestServices.GetRequiredService<ITempDataDictionaryFactory>();
             
             // Extract the assembly slug from the route
             var slug = context.Request.RouteValues["slug"]?.ToString() ?? string.Empty;
@@ -32,25 +42,6 @@ namespace Zen.CanonicaLib.UI.Handlers
                 return;
             }
 
-            // Build the OpenAPI JSON URL for this assembly
-            var apiUrl = $"{context.Request.Scheme}://{context.Request.Host}{options.RootPath}{options.ApiPath}/{slug}";
-            
-            // Generate Redocly HTML
-            var html = GenerateRedoclyHtml(assemblyName, apiUrl, options);
-            
-            context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(html);
-        }
-
-        private static string ConvertSlugToAssemblyName(string slug)
-        {
-            return string.Join('.', slug
-                .Split('/', StringSplitOptions.RemoveEmptyEntries)
-                .Select(part => char.ToUpper(part[0]) + part.Substring(1)));
-        }
-
-        private static string GenerateRedoclyHtml(string assemblyName, string apiUrl, WebApplicationOptions options)
-        {
             // Remove root namespace prefix from title if configured
             var displayName = assemblyName;
             if (!string.IsNullOrEmpty(options.RootNamespace) && assemblyName.StartsWith(options.RootNamespace))
@@ -58,61 +49,64 @@ namespace Zen.CanonicaLib.UI.Handlers
                 displayName = assemblyName.Substring(options.RootNamespace.Length).TrimStart('.');
             }
 
-            return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{displayName} - API Documentation</title>
-    <meta charset=""utf-8""/>
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
-    <link href=""https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700"" rel=""stylesheet"">
-    <style>
-        body {{ margin: 0; padding: 0; }}
-        .loading {{ 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            font-family: 'Roboto', sans-serif;
-            color: #666;
-        }}
-    </style>
-</head>
-<body>
-    <div id=""redoc-container"">
-        <div class=""loading"">Loading API Documentation...</div>
-    </div>
-    
-    <script src=""https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js""></script>
-    <script>
-        Redoc.init('{apiUrl}', {{
-            scrollYOffset: 50,
-            theme: {{
-                colors: {{
-                    primary: {{
-                        main: '#667eea'
-                    }}
-                }},
-                typography: {{
-                    fontSize: '14px',
-                    lineHeight: '1.5em',
-                    code: {{
-                        fontSize: '13px',
-                        fontFamily: 'Courier, monospace'
-                    }},
-                    headings: {{
-                        fontFamily: 'Montserrat, sans-serif',
-                        fontWeight: '400'
-                    }}
-                }},
-                sidebar: {{
-                    width: '260px'
-                }}
-            }}
-        }}, document.getElementById('redoc-container'));
-    </script>
-</body>
-</html>";
+            // Build URLs
+            var apiUrl = $"{context.Request.Scheme}://{context.Request.Host}{options.RootPath}{options.ApiPath}/{slug}";
+            var backUrl = $"{context.Request.Scheme}://{context.Request.Host}{options.RootPath}";
+            
+            // Create the view model
+            var model = new RedoclyViewModel
+            {
+                AssemblyName = assemblyName,
+                DisplayName = displayName,
+                ApiUrl = apiUrl,
+                BackUrl = backUrl,
+                Options = options
+            };
+
+            var actionContext = new ActionContext(context, context.GetRouteData(), new ActionDescriptor());
+            
+            using var stringWriter = new StringWriter();
+            
+            // Try to find the Redocly view
+            var viewResult = razorViewEngine.FindView(actionContext, "CanonicaLib/Redocly", false);
+            
+            if (!viewResult.Success)
+            {
+                // Try alternative view name
+                viewResult = razorViewEngine.FindView(actionContext, "Redocly", false);
+            }
+            
+            if (!viewResult.Success)
+            {
+                context.Response.StatusCode = 500;
+                var searchedLocations = string.Join(", ", viewResult.SearchedLocations);
+                await context.Response.WriteAsync($"Redocly view not found. Searched locations: {searchedLocations}");
+                return;
+            }
+
+            var viewContext = new ViewContext(
+                actionContext,
+                viewResult.View,
+                new ViewDataDictionary<RedoclyViewModel>(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+                {
+                    Model = model
+                },
+                tempDataProvider.GetTempData(context),
+                stringWriter,
+                new HtmlHelperOptions()
+            );
+
+            await viewResult.View.RenderAsync(viewContext);
+            
+            context.Response.ContentType = "text/html";
+            await context.Response.WriteAsync(stringWriter.ToString());
+        }
+
+        private static string ConvertSlugToAssemblyName(string slug)
+        {
+            return string.Join('.', slug
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => char.ToUpper(part[0]) + part.Substring(1)));
         }
     }
 }
