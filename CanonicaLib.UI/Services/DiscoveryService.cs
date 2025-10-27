@@ -5,16 +5,18 @@ namespace Zen.CanonicaLib.UI.Services
 {
     public class DiscoveryService
     {
-        public List<Assembly> FindCanonicalAssemblies() => AppDomain.CurrentDomain.GetAssemblies()
+        public List<Assembly> FindCanonicalAssemblies() =>
+            AppDomain.CurrentDomain.GetAssemblies()
                 .Where(assembly => assembly.GetReferencedAssemblies()
-                    .Any(referencedAssembly => referencedAssembly.Name == "CanonicaLib.DataAnnotations"))
+                    .Any(referencedAssembly => referencedAssembly.Name == "Zen.CanonicaLib.DataAnnotations"))
+                .Where(assembly => !assembly.FullName!.StartsWith("Zen.CanonicaLib"))
                 .ToList();
 
         public Assembly? FindCanonicalAssembly(string assemblyName) => 
             AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(assembly => assembly.GetName().Name == assemblyName &&
                     assembly.GetReferencedAssemblies()
-                        .Any(referencedAssembly => referencedAssembly.Name == "CanonicaLib.DataAnnotations"));
+                        .Any(referencedAssembly => referencedAssembly.Name == "Zen.CanonicaLib.DataAnnotations"));
 
         public IList<Type> FindControllerDefinitions(Assembly assembly) =>
             assembly.GetTypes()

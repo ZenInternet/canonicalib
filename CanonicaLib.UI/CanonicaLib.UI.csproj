@@ -8,6 +8,7 @@
 		<RootNamespace>Zen.CanonicaLib.UI</RootNamespace>
 		<AssemblyName>Zen.CanonicaLib.UI</AssemblyName>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 	</PropertyGroup>
 
 	<!-- NuGet Package Metadata -->
@@ -49,6 +50,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\CanonicaLib.DataAnnotations\CanonicaLib.DataAnnotations.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<EmbeddedResource Include="Views\**\*.cshtml" />
 	</ItemGroup>
 
 </Project>
