@@ -1,9 +1,9 @@
-﻿using CanonicaLib.UI.Extensions;
+﻿using Zen.CanonicaLib.UI.Extensions;
 using Microsoft.OpenApi;
 using Namotion.Reflection;
 using System.Reflection;
 
-namespace CanonicaLib.UI.Services
+namespace Zen.CanonicaLib.UI.Services
 {
     public class OperationGenerator
     {

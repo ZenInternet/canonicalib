@@ -2,7 +2,10 @@
 
 [![Build and Publish NuGet Packages](https://github.com/ZenInternet/canonicalib/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/ZenInternet/canonicalib/actions/workflows/build-and-publish.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![NuGet](https://img.shields.io/nuget/v/CanonicaLib.DataAnnotations.svg)](https://www.nuget.org/packages/CanonicaLib.DataAnnotations/)
+[![Zen.CanonicaLib.DataAnnotations](https://img.shields.io/nuget/v/Zen.CanonicaLib.DataAnnotations.svg)](https://www.nuget.org/packages/Zen.CanonicaLib.DataAnnotations/)
+[![Zen.CanonicaLib.UI](https://img.shields.io/nuget/v/Zen.CanonicaLib.UI.svg)](https://www.nuget.org/packages/Zen.CanonicaLib.UI/)
+
+![CanonicaLib Logo](./logo.png)
 
 **CanonicaLib** is an open-source library that enables systems development teams to create and maintain canonical shared libraries across multiple teams and projects. It provides tooling to transform C# source code containing model definitions, API endpoints, and webhook specifications into standards-compliant packages for different platforms.
 

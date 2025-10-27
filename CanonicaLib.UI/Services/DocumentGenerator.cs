@@ -2,7 +2,7 @@
 using Microsoft.OpenApi;
 using System.Reflection;
 
-namespace CanonicaLib.UI.Services
+namespace Zen.CanonicaLib.UI.Services
 {
     public class DocumentGenerator
     {

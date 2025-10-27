@@ -1,8 +1,8 @@
-﻿using CanonicaLib.DataAnnotations;
+﻿using Zen.CanonicaLib.DataAnnotations;
 using Microsoft.OpenApi;
 using System.Reflection;
 
-namespace CanonicaLib.UI.Services
+namespace Zen.CanonicaLib.UI.Services
 {
     public class PathsGenerator
     {

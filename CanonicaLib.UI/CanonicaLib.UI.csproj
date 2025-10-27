@@ -8,12 +8,13 @@
 		<RootNamespace>Zen.CanonicaLib.UI</RootNamespace>
 		<AssemblyName>Zen.CanonicaLib.UI</AssemblyName>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 	</PropertyGroup>
 
 	<!-- NuGet Package Metadata -->
 	<PropertyGroup>
 		<PackageId>Zen.CanonicaLib.UI</PackageId>
-		<PackageVersion>0.0.1</PackageVersion>
+		<!-- Remove PackageVersion - MinVer will handle this -->
 		<Title>CanonicaLib UI Services</Title>
 		<Description>Provides UI services and OpenAPI generation capabilities for CanonicaLib. Includes schema generation, discovery services, and OpenAPI specification creation from canonical C# definitions.</Description>
 		<Summary>OpenAPI generation and UI services for CanonicaLib canonical contracts</Summary>
@@ -27,7 +28,6 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>openapi;schema;generation;canonical;contracts;api;swagger;dotnet</PackageTags>
-		<PackageReleaseNotes>Initial release of CanonicaLib UI services with OpenAPI generation capabilities.</PackageReleaseNotes>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -44,10 +44,15 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.OpenApi" Version="2.3.7" />
 		<PackageReference Include="Namotion.Reflection" Version="3.4.3" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\CanonicaLib.DataAnnotations\CanonicaLib.DataAnnotations.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Views\**\*.cshtml" />
 	</ItemGroup>
 
 </Project>

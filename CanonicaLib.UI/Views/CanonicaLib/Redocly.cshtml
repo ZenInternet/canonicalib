@@ -1,0 +1,101 @@
+﻿@model Zen.CanonicaLib.UI.Models.RedoclyViewModel
+@{
+    ViewData["Title"] = Model.DisplayName + " - API Documentation";
+    Layout = null; // We need a custom layout for Redocly
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewData["Title"]</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; }
+        .loading { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: 'Roboto', sans-serif;
+            color: #666;
+        }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            background: #667eea;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .back-link:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            color: white;
+            text-decoration: none;
+        }
+        .back-link:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+        .back-arrow {
+            font-size: 16px;
+        }
+        #redoc-container {
+            margin-top: 80px;
+            border-top: 2px solid #5a67db;
+        }
+    </style>
+</head>
+<body>
+    <a href="@Model.BackUrl" class="back-link" title="Back to CanonicaLib Overview">
+        <span class="back-arrow">←</span>
+        <span>Back to Overview</span>
+    </a>
+    
+    <div id="redoc-container">
+        <div class="loading">Loading API Documentation...</div>
+    </div>
+    
+    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+    <script>
+        Redoc.init('@Html.Raw(Model.ApiUrl)', {
+            scrollYOffset: 50,
+            theme: {
+                colors: {
+                    primary: {
+                        main: '#667eea'
+                    }
+                },
+                typography: {
+                    fontSize: '14px',
+                    lineHeight: '1.5em',
+                    code: {
+                        fontSize: '13px',
+                        fontFamily: 'Courier, monospace'
+                    },
+                    headings: {
+                        fontFamily: 'Montserrat, sans-serif',
+                        fontWeight: '400'
+                    }
+                },
+                sidebar: {
+                    width: '260px'
+                }
+            }
+        }, document.getElementById('redoc-container'));
+    </script>
+</body>
+</html>

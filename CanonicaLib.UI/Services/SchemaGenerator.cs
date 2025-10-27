@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace CanonicaLib.UI.Services
+namespace Zen.CanonicaLib.UI.Services
 {
     public class SchemaGenerator
     {
@@ -41,7 +41,7 @@ namespace CanonicaLib.UI.Services
             
             if (schemaDefinition.Assembly == contextAssembly && schemaDefinition != contextType)
             {
-                return new OpenApiSchemaReference(schemaDefinition.ToString());
+                return new OpenApiSchemaReference(schemaDefinition.ToString().Replace(".", "_"));
             }
 
             var schema = new OpenApiSchema

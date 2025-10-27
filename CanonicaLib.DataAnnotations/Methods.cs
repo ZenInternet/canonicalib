@@ -1,4 +1,4 @@
-﻿namespace CanonicaLib.DataAnnotations
+﻿namespace Zen.CanonicaLib.DataAnnotations
 {
     public static class Methods
     {

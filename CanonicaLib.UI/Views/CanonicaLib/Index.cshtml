@@ -1,0 +1,52 @@
+﻿@model Zen.CanonicaLib.UI.Models.AssembliesViewModel
+@{
+    ViewData["Title"] = "CanonicaLib Documentation";
+    Layout = "_Layout";
+}
+
+<div class="hero-section py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">CanonicaLib Documentation</h1>
+        <p class="lead">Explore your canonical assemblies and their OpenAPI specifications</p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Available Assemblies (@Model.Assemblies.Count)</h2>
+            
+            @if (Model.Assemblies.Any())
+            {
+                <div class="row">
+                    @foreach (var assembly in Model.Assemblies)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card assembly-card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">@assembly.Name</h5>
+                                    <p class="card-text text-muted">Interactive API documentation powered by Redocly</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="@Model.Options.RootPath/@assembly.Slug" class="btn btn-primary">
+                                            📖 View Documentation
+                                        </a>
+                                        <a href="@Model.Options.RootPath@Model.Options.ApiPath/@assembly.Slug" class="btn btn-outline-secondary btn-sm">
+                                            📄 OpenAPI JSON
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">No Assemblies Found</h4>
+                    <p>No canonical assemblies were discovered in the current application.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

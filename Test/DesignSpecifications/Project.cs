@@ -1,4 +1,4 @@
-﻿using CanonicaLib.UI;
+﻿using Zen.CanonicaLib.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 

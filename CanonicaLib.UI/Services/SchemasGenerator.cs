@@ -1,7 +1,7 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
 
-namespace CanonicaLib.UI.Services
+namespace Zen.CanonicaLib.UI.Services
 {
     public class SchemasGenerator
     {
@@ -27,7 +27,7 @@ namespace CanonicaLib.UI.Services
             {
                 var schema = SchemaGenerator.GenerateSchema(schemaDefinition, schemaDefinition, assembly);
                     
-                schemas.Add(schemaDefinition.FullName, schema);
+                schemas.Add(schemaDefinition.FullName.Replace(".", "_"), schema);
             }
 
             return schemas;
