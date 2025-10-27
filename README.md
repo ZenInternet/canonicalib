@@ -5,6 +5,8 @@
 [![Zen.CanonicaLib.DataAnnotations](https://img.shields.io/nuget/v/Zen.CanonicaLib.DataAnnotations.svg)](https://www.nuget.org/packages/Zen.CanonicaLib.DataAnnotations/)
 [![Zen.CanonicaLib.UI](https://img.shields.io/nuget/v/Zen.CanonicaLib.UI.svg)](https://www.nuget.org/packages/Zen.CanonicaLib.UI/)
 
+![CanonicaLib Logo](./logo.png)
+
 **CanonicaLib** is an open-source library that enables systems development teams to create and maintain canonical shared libraries across multiple teams and projects. It provides tooling to transform C# source code containing model definitions, API endpoints, and webhook specifications into standards-compliant packages for different platforms.
 
 ## 🎯 Purpose
