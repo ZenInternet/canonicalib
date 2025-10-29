@@ -11,25 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\design-specifications-poc\Contract\Contract.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Customers.Communications.Capability\Customers.Communications.Capability.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Customers.Communications.ContextProvider\Customers.Communications.ContextProvider.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Customers.Contracts.Capability\Customers.Contracts.Capability.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Orders\Orders.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Products.Baskets\Products.Baskets.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Products.Catalogue.Capability\Products.Catalogue.Capability.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Products.Catalogue.Management\Products.Catalogue.Management.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Products.Ordering\Products.Ordering.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Products.Promotions\Products.Promotions.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Products.Qualification\Products.Qualification.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Resources.Logistics.CPE.Capability\Resources.Logistics.CPE.Capability.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Resources.Logistics.CPE\Resources.Logistics.CPE.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Resources\Resources.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Services.Addressing.Capability\Services.Addressing.Capability.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Services.Addressing.SupplierIntegration\Services.Addressing.SupplierIntegration.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Services.Appointing.Capability\Services.Appointing.Capability.csproj" />
-    <ProjectReference Include="..\..\..\design-specifications-poc\Services\Services.csproj" />
     <ProjectReference Include="..\..\CanonicaLib.UI\CanonicaLib.UI.csproj" />
+    <ProjectReference Include="..\Contract\Contract.csproj" />
   </ItemGroup>
 
 </Project>
