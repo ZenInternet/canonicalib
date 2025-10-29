@@ -13,6 +13,7 @@ namespace Test.Contract.Controllers
     /// <remarks>
     /// Some markdown content explaining the user management section
     /// </remarks>
+    [OpenApiTag("Users")]
     [OpenApiPath("/users")]
     public interface IUsersController
     {
