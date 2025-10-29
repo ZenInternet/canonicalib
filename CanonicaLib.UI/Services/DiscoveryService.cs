@@ -116,5 +116,31 @@ namespace Zen.CanonicaLib.UI.Services
             return libraryInstance;
         }
 
+        public IList<string> GetDocumentList(Assembly assembly)
+        {
+            // search embedded resources for markdown documents
+            var documentNames = assembly.GetManifestResourceNames()
+                .Where(name => name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                .Select(name => name.Replace($"{assembly.FullName.Split(",")[0]}.Docs.", ""))
+                .ToList();
+
+            return documentNames;
+        }
+
+        public bool HasIndexDocument(Assembly assembly)
+        {
+            var documentNames = GetDocumentList(assembly);
+            return documentNames.Contains("index.md", StringComparer.OrdinalIgnoreCase);
+        }
+
+        public string GetDocumentContent(Assembly assembly, string documentName)
+        {
+            var resourceName = $"{assembly.FullName.Split(",")[0]}.Docs.{documentName}";
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+                throw new FileNotFoundException($"Document '{documentName}' not found in assembly resources.");
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
     }
 }
