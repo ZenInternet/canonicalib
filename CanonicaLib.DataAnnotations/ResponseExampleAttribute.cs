@@ -3,15 +3,14 @@
 namespace Zen.CanonicaLib.DataAnnotations
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    public class ResponseExampleAttribute : Attribute
+    public class ResponseExampleAttribute : ExampleAttribute
     {
         public int StatusCode { get; set; }
-        public Type ExampleType { get; set; }
 
         public ResponseExampleAttribute(int statusCode, Type exampleType)
+            : base(exampleType)
         {
             StatusCode = statusCode;
-            ExampleType = exampleType;
         }
     }
 }

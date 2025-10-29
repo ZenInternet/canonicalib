@@ -26,12 +26,12 @@ namespace Zen.CanonicaLib.UI.Services
         public OpenApiDocument GenerateDocument(Assembly assembly, DiscoveryService discoveryService)
         {
 
-            var generatorContext = new GeneratorContext(assembly, discoveryService);
+            var generatorContext = new GeneratorContext(assembly);
 
             InfoGenerator.GenerateInfo(generatorContext);
-            PathsGenerator.GeneratePaths(generatorContext);
             ComponentsGenerator.GenerateComponents(generatorContext);
             TagGroupsGenerator.GenerateTagGroups(generatorContext);
+            PathsGenerator.GeneratePaths(generatorContext);
 
             return generatorContext.Document;
         }

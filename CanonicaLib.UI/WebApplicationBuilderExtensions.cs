@@ -45,16 +45,18 @@ namespace Zen.CanonicaLib.UI
         }
 
         private static IServiceCollection AddGenerators(this IServiceCollection services)
-        {            
-            services.AddTransient<DocumentGenerator>();
-            services.AddTransient<InfoGenerator>();
-            services.AddTransient<TagGroupsGenerator>();
-            services.AddTransient<PathsGenerator>();
-            services.AddTransient<OperationGenerator>();
-            services.AddTransient<ResponsesGenerator>();
+        {
             services.AddTransient<ComponentsGenerator>();
-            services.AddTransient<SchemasGenerator>();
+            services.AddTransient<DocumentGenerator>();
+            services.AddTransient<ExamplesGenerator>();
+            services.AddTransient<InfoGenerator>();
+            services.AddTransient<OperationGenerator>();
+            services.AddTransient<PathsGenerator>();
+            services.AddTransient<RequestBodyGenerator>();
+            services.AddTransient<ResponsesGenerator>();
             services.AddTransient<SchemaGenerator>();
+            services.AddTransient<SchemasGenerator>();
+            services.AddTransient<TagGroupsGenerator>();
 
             return services;
         }

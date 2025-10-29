@@ -4,9 +4,9 @@ using Zen.CanonicaLib.DataAnnotations;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    internal class ResponsesGenerator
+    public class ResponsesGenerator
     {
-        internal static OpenApiResponses GenerateResponses(MethodInfo endpointDefinition)
+        public OpenApiResponses GenerateResponses(MethodInfo endpointDefinition)
         {
             var responses = new OpenApiResponses();
 

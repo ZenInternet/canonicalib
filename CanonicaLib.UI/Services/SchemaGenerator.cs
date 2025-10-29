@@ -11,7 +11,7 @@ namespace Zen.CanonicaLib.UI.Services
     /// </summary>
     public class SchemaGenerator
     {
-        internal void GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext)
+        public void GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext, out IOpenApiSchema? openApiSchema)
         {
             if (schemaDefinition == null)
                 throw new ArgumentNullException(nameof(schemaDefinition));
@@ -20,18 +20,17 @@ namespace Zen.CanonicaLib.UI.Services
                 throw new ArgumentNullException(nameof(generatorContext));
 
             var schemaKey = GetSchemaKey(schemaDefinition);
-            
-            // Skip if not in the schemas dictionary (shouldn't happen based on SchemasGenerator logic)
-            if (!generatorContext.Schemas.ContainsKey(schemaKey))
-                return;
 
             try
             {
                 // Generate the OpenAPI schema using reflection
-                var openApiSchema = CreateSchemaFromType(schemaDefinition, generatorContext.Schemas, generatorContext.Assembly);
+                openApiSchema = CreateSchemaFromType(schemaDefinition, generatorContext.Schemas, generatorContext.Assembly);
 
-                // Update the placeholder in the schemas dictionary
-                generatorContext.Schemas[schemaKey] = openApiSchema;
+                if (generatorContext.Schemas.ContainsKey(schemaKey))
+                {
+                    // Update the placeholder in the schemas dictionary
+                    generatorContext.Schemas[schemaKey] = openApiSchema;
+                }
             }
             catch (Exception ex)
             {
@@ -108,7 +107,7 @@ namespace Zen.CanonicaLib.UI.Services
             schema.Description = type.GetXmlDocsSummary() ?? null;
             schema.Comment = type.GetXmlDocsRemarks() ?? null;
             schema.Properties = new Dictionary<string, IOpenApiSchema>();
-            
+
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var requiredProperties = new HashSet<string>();
 
@@ -118,7 +117,7 @@ namespace Zen.CanonicaLib.UI.Services
                 {
                     var propertyName = GetPropertyName(property);
                     schema.Properties[propertyName] = CreateSchemaOrReference(property.PropertyType, existingSchemas, targetAssembly);
-                    
+
                     // Check if property is required (not nullable and no default value)
                     if (IsRequiredProperty(property))
                     {
@@ -179,12 +178,12 @@ namespace Zen.CanonicaLib.UI.Services
 
         private static bool IsPrimitiveType(Type type)
         {
-            return type.IsPrimitive || 
-                   type == typeof(string) || 
-                   type == typeof(decimal) || 
-                   type == typeof(DateTime) || 
-                   type == typeof(DateTimeOffset) || 
-                   type == typeof(TimeSpan) || 
+            return type.IsPrimitive ||
+                   type == typeof(string) ||
+                   type == typeof(decimal) ||
+                   type == typeof(DateTime) ||
+                   type == typeof(DateTimeOffset) ||
+                   type == typeof(TimeSpan) ||
                    type == typeof(Guid);
         }
 
@@ -224,8 +223,8 @@ namespace Zen.CanonicaLib.UI.Services
 
         private static bool IsArrayOrCollection(Type type)
         {
-            return type.IsArray || 
-                   (type.IsGenericType && 
+            return type.IsArray ||
+                   (type.IsGenericType &&
                     (type.GetGenericTypeDefinition() == typeof(List<>) ||
                      type.GetGenericTypeDefinition() == typeof(IList<>) ||
                      type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
@@ -257,7 +256,7 @@ namespace Zen.CanonicaLib.UI.Services
         {
             // Simple logic - could be enhanced to check for Required attributes or nullable reference types
             var propertyType = property.PropertyType;
-            
+
             // Value types (except nullable) are typically required
             if (propertyType.IsValueType && !IsNullableType(propertyType))
             {

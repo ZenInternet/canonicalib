@@ -1,8 +1,8 @@
-﻿using Zen.CanonicaLib.DataAnnotations;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using Test.Contract.Examples;
+using Zen.CanonicaLib.DataAnnotations;
 
 namespace Test.Contract.Controllers
 {
@@ -13,7 +13,7 @@ namespace Test.Contract.Controllers
     /// <remarks>
     /// Some markdown content explaining the user management section
     /// </remarks>
-    [Path("/users")]
+    [OpenApiPath("/users")]
     public interface IUsersController
     {
 
@@ -23,7 +23,7 @@ namespace Test.Contract.Controllers
         /// <remarks>
         /// Gets a list of users
         /// </remarks>
-        [Endpoint("", Methods.MethodGet)]
+        [OpenApiEndpoint("", Methods.MethodGet)]
         [Response(typeof(GetUsersResponse), StatusCodes.Status200OK, "Successfully retrieved users")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UsersResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
@@ -31,7 +31,7 @@ namespace Test.Contract.Controllers
         public IActionResult GetUsers();
 
 
-        [Endpoint("{userId}", Methods.MethodGet)]
+        [OpenApiEndpoint("{userId}", Methods.MethodGet)]
         [Response(typeof(User), StatusCodes.Status200OK, "Successfully retrieved user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
@@ -39,7 +39,7 @@ namespace Test.Contract.Controllers
         [Response(StatusCodes.Status404NotFound, "The specified user was not found")]
         public IActionResult GetUser([FromRequestPath] Guid userId);
 
-        [Endpoint("", Methods.MethodPost)]
+        [OpenApiEndpoint("", Methods.MethodPost)]
         [Response(typeof(User), StatusCodes.Status200OK, "Successfully created user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "Invalid request")]
@@ -47,7 +47,7 @@ namespace Test.Contract.Controllers
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]
         public IActionResult CreateUser([FromRequestBody] User user);
 
-        [Endpoint("{userId}", Methods.MethodPut)]
+        [OpenApiEndpoint("{userId}", Methods.MethodPut)]
         [Response(typeof(User), StatusCodes.Status200OK, "Successfully updated user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "Invalid request")]

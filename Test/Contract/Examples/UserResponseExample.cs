@@ -1,6 +1,6 @@
 ﻿
-using Zen.CanonicaLib.DataAnnotations;
 using System;
+using Zen.CanonicaLib.DataAnnotations;
 
 namespace Test.Contract.Examples
 {

@@ -24,13 +24,13 @@ namespace Zen.CanonicaLib.UI.Services
 
             foreach (var controllerDefinition in controllerDefinitions)
             {
-                var pathAttribute = controllerDefinition.GetCustomAttribute<PathAttribute>();
+                var pathAttribute = controllerDefinition.GetCustomAttribute<OpenApiPathAttribute>();
 
                 var endpointDefinitions = DiscoveryService.FindEndpointDefinitions(controllerDefinition);
 
                 foreach (var endpointDefinition in endpointDefinitions)
                 {
-                    var endpointAttribute = endpointDefinition.GetCustomAttribute<EndpointAttribute>();
+                    var endpointAttribute = endpointDefinition.GetCustomAttribute<OpenApiEndpointAttribute>();
 
                     if (endpointAttribute == null)
                         continue;
@@ -50,7 +50,7 @@ namespace Zen.CanonicaLib.UI.Services
                     if (path.Operations!.ContainsKey(method))
                         continue;
 
-                    path.Operations.Add(method, OperationGenerator.GenerateOperation(endpointDefinition));
+                    path.Operations.Add(method, OperationGenerator.GenerateOperation(endpointDefinition, generatorContext));
                 }
             }
 

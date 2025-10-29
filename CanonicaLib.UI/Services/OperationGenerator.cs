@@ -8,7 +8,18 @@ namespace Zen.CanonicaLib.UI.Services
 {
     public class OperationGenerator
     {
-        public OpenApiOperation GenerateOperation(MethodInfo endpointDefinition)
+        private readonly RequestBodyGenerator RequestBodyGenerator;
+        private readonly ResponsesGenerator ResponsesGenerator;
+
+        public OperationGenerator(
+            RequestBodyGenerator requestBodyGenerator,
+            ResponsesGenerator responsesGenerator)
+        {
+            RequestBodyGenerator = requestBodyGenerator;
+            ResponsesGenerator = responsesGenerator;
+        }
+
+        public OpenApiOperation GenerateOperation(MethodInfo endpointDefinition, GeneratorContext generatorContext)
         {
             var tagAttribute = endpointDefinition.DeclaringType!.GetCustomAttribute<OpenApiTagAttribute>();
 
@@ -23,6 +34,7 @@ namespace Zen.CanonicaLib.UI.Services
                 Tags = tags,
                 Summary = endpointDefinition.GetXmlDocsSummary().IfEmpty(endpointDefinition.Name),
                 Description = endpointDefinition.GetXmlDocsRemarks().IfEmpty(null),
+                RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
                 Responses = ResponsesGenerator.GenerateResponses(endpointDefinition)
             };
 

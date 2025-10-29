@@ -47,11 +47,11 @@ namespace Zen.CanonicaLib.UI.Services
 
         public IList<Type> FindControllerDefinitions(Assembly assembly) =>
             assembly.GetTypes()
-                .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(PathAttribute), inherit: false).Any())
+                .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(OpenApiPathAttribute), inherit: false).Any())
                 .ToList();
 
         internal IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition) => controllerDefinition.GetMethods()
-                .Where(method => method.GetCustomAttributes(typeof(EndpointAttribute), inherit: false).Any())
+                .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
                 .ToList();
 
         internal IList<Type> FindSchemaDefinitions(Assembly assembly)
@@ -88,7 +88,8 @@ namespace Zen.CanonicaLib.UI.Services
                   .Where(tag => tag.TagAttribute != null)
                   .ToList();
 
-            return tagAttributes.Select(x => new OpenApiTag() {
+            return tagAttributes.Select(x => new OpenApiTag()
+            {
                 Name = x.TagAttribute!.Tag,
                 Description = x.Summary.IfEmpty(null)
             }).ToHashSet();

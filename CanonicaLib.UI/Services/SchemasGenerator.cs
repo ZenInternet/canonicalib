@@ -1,11 +1,9 @@
 ﻿using Microsoft.OpenApi;
-using System.Reflection;
 
 namespace Zen.CanonicaLib.UI.Services
 {
     public class SchemasGenerator
     {
-
         private readonly DiscoveryService DiscoveryService;
 
         private readonly SchemaGenerator SchemaGenerator;
@@ -16,7 +14,7 @@ namespace Zen.CanonicaLib.UI.Services
             SchemaGenerator = schemaGenerator;
         }
 
-        internal void GenerateSchemas(GeneratorContext generatorContext)
+        public void GenerateSchemas(GeneratorContext generatorContext)
         {
             var assembly = generatorContext.Assembly;
             var schemaDefinitions = DiscoveryService.FindSchemaDefinitions(assembly);
@@ -29,7 +27,7 @@ namespace Zen.CanonicaLib.UI.Services
             //  for each schema definition, generate an OpenApiSchema and add it to the dictionary
             foreach (var schemaDefinition in schemaDefinitions)
             {
-                SchemaGenerator.GenerateSchema(schemaDefinition, generatorContext);
+                SchemaGenerator.GenerateSchema(schemaDefinition, generatorContext, out var _);
             }
         }
 
