@@ -1,10 +1,10 @@
-﻿using Zen.CanonicaLib.DataAnnotations;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using Zen.Contract.Examples;
+using Test.Contract.Examples;
+using Zen.CanonicaLib.DataAnnotations;
 
-namespace Zen.Contract.Controllers
+namespace Test.Contract.Controllers
 {
 
     /// <summary>
@@ -13,7 +13,8 @@ namespace Zen.Contract.Controllers
     /// <remarks>
     /// Some markdown content explaining the user management section
     /// </remarks>
-    [Path("/users")]
+    [OpenApiTag("Users")]
+    [OpenApiPath("/users")]
     public interface IUsersController
     {
 
@@ -23,38 +24,38 @@ namespace Zen.Contract.Controllers
         /// <remarks>
         /// Gets a list of users
         /// </remarks>
-        [Endpoint("", Methods.MethodGet)]
-        [Response(StatusCodes.Status200OK, "Successfully retrieved users", typeof(GetUsersResponse))]
+        [OpenApiEndpoint("", Methods.MethodGet)]
+        [Response(typeof(GetUsersResponse), StatusCodes.Status200OK, "Successfully retrieved users")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UsersResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]
         public IActionResult GetUsers();
 
 
-        [Endpoint("{userId}", Methods.MethodGet)]
-        [Response(StatusCodes.Status200OK, "Successfully retrieved user", typeof(User))]
+        [OpenApiEndpoint("{userId}", Methods.MethodGet)]
+        [Response(typeof(User), StatusCodes.Status200OK, "Successfully retrieved user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]
         [Response(StatusCodes.Status404NotFound, "The specified user was not found")]
         public IActionResult GetUser([FromRequestPath] Guid userId);
 
-        [Endpoint("", Methods.MethodPost)]
-        [Response(StatusCodes.Status200OK, "Successfully created user",typeof(User))]
+        [OpenApiEndpoint("", Methods.MethodPost)]
+        [Response(typeof(User), StatusCodes.Status200OK, "Successfully created user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
-        [Response(StatusCodes.Status400BadRequest, "Invalid request", typeof(ProblemDetails))]
+        [Response(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "Invalid request")]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]
         public IActionResult CreateUser([FromRequestBody] User user);
 
-        [Endpoint("{userId}", Methods.MethodPut)]
-        [Response(StatusCodes.Status200OK, "Successfully updated user", typeof(User))]
+        [OpenApiEndpoint("{userId}", Methods.MethodPut)]
+        [Response(typeof(User), StatusCodes.Status200OK, "Successfully updated user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
-        [Response(StatusCodes.Status400BadRequest, "Invalid request", typeof(ProblemDetails))]
+        [Response(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "Invalid request")]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]
         [Response(StatusCodes.Status404NotFound, "The specified user was not found")]
-        [Response(StatusCodes.Status409Conflict, "The update could not be completed due to a conflict", typeof(ProblemDetails))]
+        [Response(typeof(ProblemDetails), StatusCodes.Status409Conflict, "The update could not be completed due to a conflict")]
         public IActionResult UpdateUser([FromRequestPath] Guid userId, [FromRequestBody] User user);
     }
 }

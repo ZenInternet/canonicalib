@@ -1,5 +1,4 @@
 ﻿using Microsoft.OpenApi;
-using System.Reflection;
 
 namespace Zen.CanonicaLib.UI.Services
 {
@@ -13,9 +12,13 @@ namespace Zen.CanonicaLib.UI.Services
             SchemasGenerator = schemasGenerator;
         }
 
-        public OpenApiComponents GenerateComponents(Assembly assembly) => new OpenApiComponents()
+        public void GenerateComponents(GeneratorContext generatorContext)
         {
-            Schemas = SchemasGenerator.GenerateSchemas(assembly)
-        };
+            SchemasGenerator.GenerateSchemas(generatorContext);
+            generatorContext.Document.Components = new OpenApiComponents()
+            {
+                Schemas = generatorContext.Schemas
+            };
+        }
     }
 }

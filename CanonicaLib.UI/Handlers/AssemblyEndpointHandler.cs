@@ -1,8 +1,7 @@
-﻿using Zen.CanonicaLib.UI.Services;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
-using System.Text.Json;
+using Zen.CanonicaLib.UI.Services;
 
 namespace Zen.CanonicaLib.UI.Handlers
 {
@@ -31,7 +30,7 @@ namespace Zen.CanonicaLib.UI.Handlers
 
             var documentGeneratorService = context.RequestServices.GetRequiredService<DocumentGenerator>();
 
-            var document = documentGeneratorService.GenerateDocument(assembly);
+            var document = documentGeneratorService.GenerateDocument(assembly, discoveryService);
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = 200;

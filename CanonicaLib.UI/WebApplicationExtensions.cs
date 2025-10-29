@@ -1,7 +1,7 @@
-using Zen.CanonicaLib.UI.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Zen.CanonicaLib.UI.Handlers;
 
 namespace Zen.CanonicaLib.UI
 {

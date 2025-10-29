@@ -20,10 +20,10 @@ namespace Zen.CanonicaLib.UI.Handlers
             var discoveryService = context.RequestServices.GetRequiredService<DiscoveryService>();
             var razorViewEngine = context.RequestServices.GetRequiredService<IRazorViewEngine>();
             var tempDataProvider = context.RequestServices.GetRequiredService<ITempDataDictionaryFactory>();
-            
+
             // Extract the assembly slug from the route
             var slug = context.Request.RouteValues["slug"]?.ToString() ?? string.Empty;
-            
+
             if (string.IsNullOrEmpty(slug))
             {
                 context.Response.StatusCode = 400;
@@ -34,7 +34,7 @@ namespace Zen.CanonicaLib.UI.Handlers
             // Convert slug to assembly name to validate it exists
             var assemblyName = ConvertSlugToAssemblyName(slug);
             var assembly = discoveryService.FindCanonicalAssembly(assemblyName);
-            
+
             if (assembly == null)
             {
                 context.Response.StatusCode = 404;
@@ -52,7 +52,7 @@ namespace Zen.CanonicaLib.UI.Handlers
             // Build URLs
             var apiUrl = $"{context.Request.Scheme}://{context.Request.Host}{options.RootPath}{options.ApiPath}/{slug}";
             var backUrl = $"{context.Request.Scheme}://{context.Request.Host}{options.RootPath}";
-            
+
             // Create the view model
             var model = new RedoclyViewModel
             {
@@ -64,18 +64,18 @@ namespace Zen.CanonicaLib.UI.Handlers
             };
 
             var actionContext = new ActionContext(context, context.GetRouteData(), new ActionDescriptor());
-            
+
             using var stringWriter = new StringWriter();
-            
+
             // Try to find the Redocly view
             var viewResult = razorViewEngine.FindView(actionContext, "CanonicaLib/Redocly", false);
-            
+
             if (!viewResult.Success)
             {
                 // Try alternative view name
                 viewResult = razorViewEngine.FindView(actionContext, "Redocly", false);
             }
-            
+
             if (!viewResult.Success)
             {
                 context.Response.StatusCode = 500;
@@ -97,7 +97,7 @@ namespace Zen.CanonicaLib.UI.Handlers
             );
 
             await viewResult.View.RenderAsync(viewContext);
-            
+
             context.Response.ContentType = "text/html";
             await context.Response.WriteAsync(stringWriter.ToString());
         }

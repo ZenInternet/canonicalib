@@ -2,7 +2,7 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace Zen.Contract
+namespace Test.Contract
 {
     public class User
     {

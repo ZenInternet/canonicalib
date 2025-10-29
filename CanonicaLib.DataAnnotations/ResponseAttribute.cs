@@ -1,21 +1,24 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace Zen.CanonicaLib.DataAnnotations
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    public class ResponseAttribute : Attribute
+    public class ResponseAttribute : ProducesResponseTypeAttribute
     {
-        public int StatusCode { get; }
+        public string? Description { get; set; }
 
-        public string? Description { get; }
-
-        public Type? ResponseType { get; set; }
-
-        public ResponseAttribute(int statusCode, string? description = null, Type? responseType = null)
+        public ResponseAttribute(Type? type, int statusCode, string description)
+            : base(type ?? typeof(void), statusCode)
         {
-            StatusCode = statusCode;
             Description = description;
-            ResponseType = responseType;
         }
+
+        public ResponseAttribute(int statusCode, string description)
+            : base(typeof(void), statusCode)
+        {
+            Description = description;
+        }
+
     }
 }

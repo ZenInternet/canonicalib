@@ -3,11 +3,11 @@
 namespace Zen.CanonicaLib.DataAnnotations
 {
     [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
-    public class PathAttribute : Attribute
+    public class OpenApiPathAttribute : Attribute
     {
         public string PathPattern { get; }
 
-        public PathAttribute(string pathPattern)
+        public OpenApiPathAttribute(string pathPattern)
         {
             PathPattern = pathPattern;
         }

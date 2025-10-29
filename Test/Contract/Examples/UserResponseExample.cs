@@ -1,8 +1,8 @@
 ﻿
-using Zen.CanonicaLib.DataAnnotations;
 using System;
+using Zen.CanonicaLib.DataAnnotations;
 
-namespace Zen.Contract.Examples
+namespace Test.Contract.Examples
 {
     public class UserResponseExample : IExample<User>
     {
