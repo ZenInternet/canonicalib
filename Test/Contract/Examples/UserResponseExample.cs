@@ -2,7 +2,7 @@
 using Zen.CanonicaLib.DataAnnotations;
 using System;
 
-namespace Zen.Contract.Examples
+namespace Test.Contract.Examples
 {
     public class UserResponseExample : IExample<User>
     {

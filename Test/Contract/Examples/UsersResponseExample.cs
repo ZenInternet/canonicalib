@@ -3,7 +3,7 @@ using Zen.CanonicaLib.DataAnnotations;
 using System;
 using System.Collections.Generic;
 
-namespace Zen.Contract.Examples
+namespace Test.Contract.Examples
 {
     public class UsersResponseExample : IExample<GetUsersResponse>
     {

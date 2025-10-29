@@ -1,19 +1,46 @@
-﻿using Zen.CanonicaLib.DataAnnotations;
+﻿using Microsoft.OpenApi;
+using Namotion.Reflection;
 using System.Reflection;
+using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Extensions;
 
 namespace Zen.CanonicaLib.UI.Services
 {
     public class DiscoveryService
     {
+        public List<Assembly> GetAllAssemblies()
+        {
+            //Find all of the dll's that are in the 'bin' directory with the current app, even if they're not loaded yet
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
+            var dlls = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll", SearchOption.TopDirectoryOnly);
+            foreach (var dll in dlls)
+            {
+                try
+                {
+                    var assemblyName = AssemblyName.GetAssemblyName(dll);
+                    if (!assemblies.Any(a => a.FullName == assemblyName.FullName))
+                    {
+                        var assembly = Assembly.Load(assemblyName);
+                        assemblies.Add(assembly);
+                    }
+                }
+                catch
+                {
+                    // Ignore any DLLs that cannot be loaded as assemblies
+                }
+            }
+            return assemblies;
+        }
+
         public List<Assembly> FindCanonicalAssemblies() =>
-            AppDomain.CurrentDomain.GetAssemblies()
+            GetAllAssemblies()
                 .Where(assembly => assembly.GetReferencedAssemblies()
                     .Any(referencedAssembly => referencedAssembly.Name == "Zen.CanonicaLib.DataAnnotations"))
                 .Where(assembly => !assembly.FullName!.StartsWith("Zen.CanonicaLib"))
                 .ToList();
 
-        public Assembly? FindCanonicalAssembly(string assemblyName) => 
-            AppDomain.CurrentDomain.GetAssemblies()
+        public Assembly? FindCanonicalAssembly(string assemblyName) =>
+            GetAllAssemblies()
                 .FirstOrDefault(assembly => assembly.GetName().Name.ToLowerInvariant() == assemblyName.ToLowerInvariant() &&
                     assembly.GetReferencedAssemblies()
                         .Any(referencedAssembly => referencedAssembly.Name == "Zen.CanonicaLib.DataAnnotations"));
@@ -29,7 +56,9 @@ namespace Zen.CanonicaLib.UI.Services
 
         internal IList<Type> FindSchemaDefinitions(Assembly assembly)
         {
-            var schemaTypes = new List<Type>();
+            var schemaTypes = assembly.GetTypes()
+                .Where(type => type.IsClass || type.IsEnum || type.IsValueType)
+                .ToList();
 
             var controllerDefinitions = FindControllerDefinitions(assembly);
             foreach (var controllerDefinition in controllerDefinitions)
@@ -40,7 +69,7 @@ namespace Zen.CanonicaLib.UI.Services
                     var responseAttributes = endpointDefinition.GetCustomAttributes<ResponseAttribute>();
                     foreach (var responseAttribute in responseAttributes)
                     {
-                        var schemaType = responseAttribute.ResponseType;
+                        var schemaType = responseAttribute.Type;
                         if (schemaType != null && !schemaTypes.Contains(schemaType))
                         {
                             schemaTypes.Add(schemaType);
@@ -51,5 +80,40 @@ namespace Zen.CanonicaLib.UI.Services
 
             return schemaTypes;
         }
+
+        internal ISet<OpenApiTag> FindControllerTags(Assembly assembly)
+        {
+            var tagAttributes = FindControllerDefinitions(assembly)
+                  .Select(cd => new { TagAttribute = cd.GetCustomAttribute<OpenApiTagAttribute>(), Summary = cd.GetXmlDocsSummary() })
+                  .Where(tag => tag.TagAttribute != null)
+                  .ToList();
+
+            return tagAttributes.Select(x => new OpenApiTag() {
+                Name = x.TagAttribute!.Tag,
+                Description = x.Summary.IfEmpty(null)
+            }).ToHashSet();
+
+        }
+        public ILibrary GetLibraryInstance(Assembly assembly)
+        {
+            var libraries = assembly.GetTypes()
+                .Where(t => typeof(ILibrary).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            if (!libraries.Any())
+                throw new InvalidOperationException("No implementation of ILibrary found in the target assembly.");
+
+            if (libraries.Count() > 1)
+                throw new InvalidOperationException("Multiple implementations of ILibrary found in the target assembly.");
+
+            var library = libraries.First();
+
+            if (library == null)
+                throw new InvalidOperationException("Failed to instantiate ILibrary implementation.");
+
+            ILibrary libraryInstance = (ILibrary)Activator.CreateInstance(library)!;
+
+            return libraryInstance;
+        }
+
     }
 }

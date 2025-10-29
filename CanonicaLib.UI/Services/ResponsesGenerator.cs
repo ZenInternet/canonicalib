@@ -1,6 +1,6 @@
-﻿using Zen.CanonicaLib.DataAnnotations;
-using Microsoft.OpenApi;
+﻿using Microsoft.OpenApi;
 using System.Reflection;
+using Zen.CanonicaLib.DataAnnotations;
 
 namespace Zen.CanonicaLib.UI.Services
 {
@@ -15,7 +15,7 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 var statusCode = attribute.StatusCode.ToString();
                 var description = attribute.Description ?? string.Empty;
-                var responseType = attribute.ResponseType?.ToString();
+                var responseType = attribute.Type?.ToString();
                 responses[statusCode] = new OpenApiResponse
                 {
                     Description = description,
@@ -23,7 +23,7 @@ namespace Zen.CanonicaLib.UI.Services
                     {
                         { "application/json", new OpenApiMediaType()
                             {
-                                Schema = responseType != null ? new OpenApiSchemaReference(responseType.Replace(".", "_")) : null,
+                                Schema = responseType != null ? new OpenApiSchemaReference(responseType) : null,
                             }
                         }
                     }

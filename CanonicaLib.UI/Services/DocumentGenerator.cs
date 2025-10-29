@@ -9,24 +9,31 @@ namespace Zen.CanonicaLib.UI.Services
         private readonly InfoGenerator InfoGenerator;
         private readonly PathsGenerator PathsGenerator;
         private readonly ComponentsGenerator ComponentsGenerator;
+        private readonly TagGroupsGenerator TagGroupsGenerator;
 
-        public DocumentGenerator(InfoGenerator infoGenerator, PathsGenerator pathsGenerator, ComponentsGenerator componentsGenerator)
+        public DocumentGenerator(
+            InfoGenerator infoGenerator,
+            PathsGenerator pathsGenerator,
+            ComponentsGenerator componentsGenerator,
+            TagGroupsGenerator tagGroupsGenerator)
         {
             InfoGenerator = infoGenerator;
             PathsGenerator = pathsGenerator;
             ComponentsGenerator = componentsGenerator;
+            TagGroupsGenerator = tagGroupsGenerator;
         }
 
-        public OpenApiDocument GenerateDocument(Assembly assembly)
+        public OpenApiDocument GenerateDocument(Assembly assembly, DiscoveryService discoveryService)
         {
-            var document = new OpenApiDocument
-            {
-                Info = InfoGenerator.GenerateInfo(assembly),
-                Paths = PathsGenerator.GeneratePaths(assembly),
-                Components = ComponentsGenerator.GenerateComponents(assembly),
-            };
 
-            return document;
+            var generatorContext = new GeneratorContext(assembly, discoveryService);
+
+            InfoGenerator.GenerateInfo(generatorContext);
+            PathsGenerator.GeneratePaths(generatorContext);
+            ComponentsGenerator.GenerateComponents(generatorContext);
+            TagGroupsGenerator.GenerateTagGroups(generatorContext);
+
+            return generatorContext.Document;
         }
     }
 

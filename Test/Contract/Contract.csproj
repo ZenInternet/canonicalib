@@ -4,13 +4,13 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-	<RootNamespace>Zen</RootNamespace>
-	<AssemblyName>Zen.Contract</AssemblyName>
+	<RootNamespace>Test</RootNamespace>
+	<AssemblyName>Test.Contract</AssemblyName>
 	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 	<PropertyGroup>
-		<PackageId>Zen.Contract</PackageId>
+		<PackageId>Test.Contract</PackageId>
 		<Description>This is the package description</Description>
 	</PropertyGroup>
 

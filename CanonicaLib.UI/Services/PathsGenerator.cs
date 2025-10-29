@@ -1,6 +1,6 @@
-﻿using Zen.CanonicaLib.DataAnnotations;
-using Microsoft.OpenApi;
+﻿using Microsoft.OpenApi;
 using System.Reflection;
+using Zen.CanonicaLib.DataAnnotations;
 
 namespace Zen.CanonicaLib.UI.Services
 {
@@ -14,8 +14,10 @@ namespace Zen.CanonicaLib.UI.Services
             DiscoveryService = discoveryService;
             OperationGenerator = operationGenerator;
         }
-        public OpenApiPaths GeneratePaths(Assembly assembly)
+        public void GeneratePaths(GeneratorContext generatorContext)
         {
+            var assembly = generatorContext.Assembly;
+
             var paths = new OpenApiPaths();
 
             var controllerDefinitions = DiscoveryService.FindControllerDefinitions(assembly);
@@ -48,11 +50,11 @@ namespace Zen.CanonicaLib.UI.Services
                     if (path.Operations!.ContainsKey(method))
                         continue;
 
-                    path.Operations.Add(method, OperationGenerator.GenerateOpration(endpointDefinition));
+                    path.Operations.Add(method, OperationGenerator.GenerateOperation(endpointDefinition));
                 }
             }
 
-            return paths;
+            generatorContext.Document.Paths = paths;
         }
     }
 }

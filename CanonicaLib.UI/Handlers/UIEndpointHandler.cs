@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -21,13 +22,14 @@ namespace Zen.CanonicaLib.UI.Handlers
             var discoveryService = context.RequestServices.GetRequiredService<DiscoveryService>();
             var razorViewEngine = context.RequestServices.GetRequiredService<IRazorViewEngine>();
             var tempDataProvider = context.RequestServices.GetRequiredService<ITempDataDictionaryFactory>();
-            
+
             var assemblies = discoveryService.FindCanonicalAssemblies();
-            
+
             var model = new AssembliesViewModel
             {
-                Assemblies = assemblies.Select(a => new AssemblyInfo 
-                { 
+                PageTitle = options.PageTitle,
+                Assemblies = assemblies.Select(a => new AssemblyInfo
+                {
                     Name = a.FullName?.Split(",")[0] ?? "Unknown",
                     Slug = a.ConvertToSlug()
                 }).ToList(),
@@ -35,18 +37,18 @@ namespace Zen.CanonicaLib.UI.Handlers
             };
 
             var actionContext = new ActionContext(context, context.GetRouteData(), new ActionDescriptor());
-            
+
             using var stringWriter = new StringWriter();
-            
+
             // Try to find the view using the configured view locations
             var viewResult = razorViewEngine.FindView(actionContext, "CanonicaLib/Index", false);
-            
+
             if (!viewResult.Success)
             {
                 // Try alternative view name
                 viewResult = razorViewEngine.FindView(actionContext, "Index", false);
             }
-            
+
             if (!viewResult.Success)
             {
                 context.Response.StatusCode = 500;
@@ -68,7 +70,7 @@ namespace Zen.CanonicaLib.UI.Handlers
             );
 
             await viewResult.View.RenderAsync(viewContext);
-            
+
             context.Response.ContentType = "text/html";
             await context.Response.WriteAsync(stringWriter.ToString());
         }

@@ -16,22 +16,21 @@ namespace Zen.CanonicaLib.UI.Services
             SchemaGenerator = schemaGenerator;
         }
 
-        internal IDictionary<string, IOpenApiSchema> GenerateSchemas(Assembly assembly)
+        internal void GenerateSchemas(GeneratorContext generatorContext)
         {
-            var schemas = new Dictionary<string, IOpenApiSchema>();
-
+            var assembly = generatorContext.Assembly;
             var schemaDefinitions = DiscoveryService.FindSchemaDefinitions(assembly);
+
+            foreach (var schemaDefinition in schemaDefinitions)
+            {
+                generatorContext.Schemas.Add(schemaDefinition.FullName, new OpenApiSchema());
+            }
 
             //  for each schema definition, generate an OpenApiSchema and add it to the dictionary
             foreach (var schemaDefinition in schemaDefinitions)
             {
-                var schema = SchemaGenerator.GenerateSchema(schemaDefinition, schemaDefinition, assembly);
-                    
-                schemas.Add(schemaDefinition.FullName.Replace(".", "_"), schema);
+                SchemaGenerator.GenerateSchema(schemaDefinition, generatorContext);
             }
-
-            return schemas;
-
         }
 
     }
