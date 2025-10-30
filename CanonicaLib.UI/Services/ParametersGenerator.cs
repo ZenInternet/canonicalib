@@ -8,9 +8,12 @@ namespace Zen.CanonicaLib.UI.Services
     {
         private readonly SchemaGenerator SchemaGenerator;
 
-        public ParametersGenerator(SchemaGenerator schemaGenerator)
+        private readonly CanonicaLibOptions Options;
+
+        public ParametersGenerator(SchemaGenerator schemaGenerator, CanonicaLibOptions options)
         {
             SchemaGenerator = schemaGenerator;
+            Options = options;
         }
 
         public IList<IOpenApiParameter>? GenerateParameters(MethodInfo endpointDefinition, GeneratorContext generatorContext)
@@ -20,15 +23,20 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(p => p.GetCustomAttribute<OpenApiParameterAttribute>() != null)
                 .ToList();
             
-            if (!endpointParameters!.Any())
-                return null;
-
             var parameters = new List<IOpenApiParameter>();
 
             foreach (var endpointParameter in endpointParameters)
             {
                 parameters.Add(GenerateParameter(endpointParameter, generatorContext));
             }
+
+            if (Options.PostProcessors.ParametersProcessor != null)
+            {
+                parameters = Options.PostProcessors.ParametersProcessor(parameters)?.ToList() ?? new List<IOpenApiParameter>();
+            }
+
+            if (parameters.Count == 0)
+                return null;
 
             return parameters;
         }

@@ -1,4 +1,7 @@
-﻿namespace Zen.CanonicaLib.UI
+﻿using Microsoft.OpenApi;
+using Zen.CanonicaLib.UI.Services;
+
+namespace Zen.CanonicaLib.UI
 {
     /// <summary>
     /// Configuration options for CanonicaLib
@@ -16,11 +19,16 @@
         /// </summary>
         public string ApiPath { get; init; } = "/api";
 
-
         /// <summary>
         /// The root namespace of canonical libraries, if supplied, we'll remove this prefix from URL's and Titles in UI
         /// </summary>
         public string RootNamespace { get; init; } = "";
 
+        public PostProcessors? PostProcessors { get; init; } = new();
+    }
+
+    public record PostProcessors
+    {
+        public Func<IList<IOpenApiParameter>?, IList<IOpenApiParameter>?> ParametersProcessor { get; init; } = null!;
     }
 }
