@@ -1,15 +1,16 @@
 ﻿using Microsoft.OpenApi;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class HeadersGenerator
+    public class DefaultHeadersGenerator : IHeadersGenerator
     {
-        private readonly SchemaGenerator SchemaGenerator;
+        private readonly ISchemaGenerator SchemaGenerator;
 
         private readonly CanonicaLibOptions Options;
 
-        public HeadersGenerator(SchemaGenerator schemaGenerator, CanonicaLibOptions options)
+        public DefaultHeadersGenerator(ISchemaGenerator schemaGenerator, CanonicaLibOptions options)
         {
             SchemaGenerator = schemaGenerator;
             Options = options;
@@ -30,13 +31,14 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 headers = Options.PostProcessors.HeadersProcessor(headers)?.ToDictionary();
             }
-             
+
             if (headers?.Count == 0)
             {
                 headers = null;
                 return;
             }
         }
+
         private IOpenApiHeader? GenerateHeader(ResponseHeaderAttribute headerAttribute, GeneratorContext generatorContext)
         {
             IOpenApiSchema? schema;

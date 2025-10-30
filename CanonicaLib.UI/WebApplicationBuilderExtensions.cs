@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using System.Reflection;
 using Zen.CanonicaLib.UI.Services;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI
 {
@@ -13,7 +14,7 @@ namespace Zen.CanonicaLib.UI
         {
             services.AddSingleton(optionsFactory?.Invoke() ?? new CanonicaLibOptions());
 
-            services.AddTransient<DiscoveryService>();
+            services.AddTransient<IDiscoveryService, DefaultDiscoveryService>();
 
             services.AddGenerators();
 
@@ -46,19 +47,19 @@ namespace Zen.CanonicaLib.UI
 
         private static IServiceCollection AddGenerators(this IServiceCollection services)
         {
-            services.AddTransient<ComponentsGenerator>();
-            services.AddTransient<DocumentGenerator>();
-            services.AddTransient<ExamplesGenerator>();
-            services.AddTransient<HeadersGenerator>();
-            services.AddTransient<InfoGenerator>();
-            services.AddTransient<OperationGenerator>();
-            services.AddTransient<ParametersGenerator>();
-            services.AddTransient<PathsGenerator>();
-            services.AddTransient<RequestBodyGenerator>();
-            services.AddTransient<ResponsesGenerator>();
-            services.AddTransient<SchemaGenerator>();
-            services.AddTransient<SchemasGenerator>();
-            services.AddTransient<TagGroupsGenerator>();
+            services.AddTransient<IComponentsGenerator, DefaultComponentsGenerator>();
+            services.AddTransient<IDocumentGenerator, DefaultDocumentGenerator>();
+            services.AddTransient<IExamplesGenerator, DefaultExamplesGenerator>();
+            services.AddTransient<IHeadersGenerator, DefaultHeadersGenerator>();
+            services.AddTransient<IInfoGenerator, DefaultInfoGenerator>();
+            services.AddTransient<IOperationGenerator, DefaultOperationGenerator>();
+            services.AddTransient<IParametersGenerator, DefaultParametersGenerator>();
+            services.AddTransient<IPathsGenerator, DefaultPathsGenerator>();
+            services.AddTransient<IRequestBodyGenerator, DefaultRequestBodyGenerator>();
+            services.AddTransient<IResponsesGenerator, DefaultResponsesGenerator>();
+            services.AddTransient<ISchemaGenerator, DefaultSchemaGenerator>();
+            services.AddTransient<ISchemasGenerator, DefaultSchemasGenerator>();
+            services.AddTransient<ITagGroupsGenerator, DefaultTagGroupsGenerator>();
 
             return services;
         }

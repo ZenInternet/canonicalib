@@ -1,16 +1,17 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class ParametersGenerator
+    public class DefaultParametersGenerator : IParametersGenerator
     {
-        private readonly SchemaGenerator SchemaGenerator;
+        private readonly ISchemaGenerator SchemaGenerator;
 
         private readonly CanonicaLibOptions Options;
 
-        public ParametersGenerator(SchemaGenerator schemaGenerator, CanonicaLibOptions options)
+        public DefaultParametersGenerator(ISchemaGenerator schemaGenerator, CanonicaLibOptions options)
         {
             SchemaGenerator = schemaGenerator;
             Options = options;
@@ -22,7 +23,7 @@ namespace Zen.CanonicaLib.UI.Services
             var endpointParameters = endpointDefinition.GetParameters()
                 .Where(p => p.GetCustomAttribute<OpenApiParameterAttribute>() != null)
                 .ToList();
-            
+
             var parameters = new List<IOpenApiParameter>();
 
             foreach (var endpointParameter in endpointParameters)
@@ -41,7 +42,7 @@ namespace Zen.CanonicaLib.UI.Services
             return parameters;
         }
 
-        public IOpenApiParameter GenerateParameter(ParameterInfo endpointParameter, GeneratorContext generatorContext)
+        private IOpenApiParameter GenerateParameter(ParameterInfo endpointParameter, GeneratorContext generatorContext)
         {
             var parameterAttribute = endpointParameter.GetCustomAttribute<OpenApiParameterAttribute>();
 

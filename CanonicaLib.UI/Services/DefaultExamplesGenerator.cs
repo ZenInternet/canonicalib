@@ -1,16 +1,17 @@
 ﻿using Microsoft.OpenApi;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
-using System.Text.Json.Nodes;
-using System.Text.Json;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class ExamplesGenerator
+    public class DefaultExamplesGenerator : IExamplesGenerator
     {
         public void GenerateExample(ExampleAttribute exampleAttribute, out IOpenApiExample example)
         {
-            var valueString = JsonSerializer.Serialize(exampleAttribute.GetExampleContent()); 
+            var valueString = JsonSerializer.Serialize(exampleAttribute.GetExampleContent());
             example = new OpenApiExample()
             {
                 Description = exampleAttribute.GetDescription(),
@@ -18,7 +19,7 @@ namespace Zen.CanonicaLib.UI.Services
             };
         }
 
-        internal void GenerateExamples(IEnumerable<ExampleAttribute> exampleAttributes, out IDictionary<string, IOpenApiExample>? examples)
+        public void GenerateExamples(IEnumerable<ExampleAttribute> exampleAttributes, out IDictionary<string, IOpenApiExample>? examples)
         {
             if (!exampleAttributes.Any())
             {

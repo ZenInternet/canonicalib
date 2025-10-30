@@ -2,14 +2,15 @@
 using Microsoft.OpenApi;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.OpenApiExtensions;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class TagGroupsGenerator
+    public class DefaultTagGroupsGenerator : ITagGroupsGenerator
     {
-        private readonly DiscoveryService DiscoveryService;
+        private readonly IDiscoveryService DiscoveryService;
 
-        public TagGroupsGenerator(DiscoveryService discoveryService)
+        public DefaultTagGroupsGenerator(IDiscoveryService discoveryService)
         {
             DiscoveryService = discoveryService;
         }

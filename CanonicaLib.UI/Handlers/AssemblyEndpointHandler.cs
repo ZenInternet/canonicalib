@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
-using Zen.CanonicaLib.UI.Services;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Handlers
 {
@@ -9,7 +9,7 @@ namespace Zen.CanonicaLib.UI.Handlers
     {
         public static async Task HandleAssemblyRequest(HttpContext context)
         {
-            var discoveryService = context.RequestServices.GetRequiredService<DiscoveryService>();
+            var discoveryService = context.RequestServices.GetRequiredService<IDiscoveryService>();
 
             // TODO extract the 'slug' from the inbound route parameters and convert it to an assembly name.
             // Inbound slugs are in the format /my/assembly-name/is/this which would be converted to My.AssemblyName.Is.This
@@ -28,9 +28,9 @@ namespace Zen.CanonicaLib.UI.Handlers
                 return;
             }
 
-            var documentGeneratorService = context.RequestServices.GetRequiredService<DocumentGenerator>();
+            var documentGeneratorService = context.RequestServices.GetRequiredService<IDocumentGenerator>();
 
-            var document = documentGeneratorService.GenerateDocument(assembly, discoveryService);
+            var document = documentGeneratorService.GenerateDocument(assembly);
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = 200;

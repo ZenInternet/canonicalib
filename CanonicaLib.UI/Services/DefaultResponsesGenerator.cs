@@ -1,16 +1,16 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class ResponsesGenerator
+    public class DefaultResponsesGenerator : IResponsesGenerator
     {
-        private readonly ExamplesGenerator ExamplesGenerator;
+        private readonly IExamplesGenerator ExamplesGenerator;
+        private readonly IHeadersGenerator HeadersGenerator;
 
-        private readonly HeadersGenerator HeadersGenerator;
-
-        public ResponsesGenerator(ExamplesGenerator examplesGenerator, HeadersGenerator headersGenerator)
+        public DefaultResponsesGenerator(IExamplesGenerator examplesGenerator, IHeadersGenerator headersGenerator)
         {
             ExamplesGenerator = examplesGenerator;
             HeadersGenerator = headersGenerator;
