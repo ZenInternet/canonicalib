@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCanonicaLib(() =>
-    new Zen.CanonicaLib.UI.WebApplicationOptions()
+    new CanonicaLibOptions()
     {
         PageTitle = "Zen's Canonical Libraries"
     }
