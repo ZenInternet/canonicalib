@@ -29,6 +29,7 @@ namespace Test.Contract.Controllers
         [ResponseExample(StatusCodes.Status200OK, typeof(UsersResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]
+        [ResponseHeader(typeof(Guid), StatusCodes.Status200OK, "X-CorrelationId")]
         public IActionResult GetUsers();
 
 

@@ -18,8 +18,13 @@ namespace Zen.CanonicaLib.UI.Services
             };
         }
 
-        internal void GenerateExamples(IEnumerable<ExampleAttribute> exampleAttributes, out IDictionary<string, IOpenApiExample> examples)
+        internal void GenerateExamples(IEnumerable<ExampleAttribute> exampleAttributes, out IDictionary<string, IOpenApiExample>? examples)
         {
+            if (!exampleAttributes.Any())
+            {
+                examples = null;
+                return;
+            }
             examples = new Dictionary<string, IOpenApiExample>();
             foreach (var exampleAttr in exampleAttributes)
             {

@@ -39,7 +39,7 @@ namespace Zen.CanonicaLib.UI.Services
                 Description = endpointDefinition.GetXmlDocsRemarks().IfEmpty(null),
                 RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
                 Parameters = ParametersGenerator.GenerateParameters(endpointDefinition, generatorContext),
-                Responses = ResponsesGenerator.GenerateResponses(endpointDefinition)
+                Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext)
             };
 
             return operation;
