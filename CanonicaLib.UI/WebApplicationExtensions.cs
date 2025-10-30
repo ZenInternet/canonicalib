@@ -9,7 +9,7 @@ namespace Zen.CanonicaLib.UI
     {
         public static IEndpointRouteBuilder UseCanonicaLib(this IEndpointRouteBuilder app)
         {
-            var options = app.ServiceProvider.GetRequiredService<WebApplicationOptions>() ?? new WebApplicationOptions();
+            var options = app.ServiceProvider.GetRequiredService<CanonicaLibOptions>() ?? new CanonicaLibOptions();
 
             app.MapGet($"{options.RootPath}", UIEndpointHandler.HandleUIRequest);
 

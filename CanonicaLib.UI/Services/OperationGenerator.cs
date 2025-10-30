@@ -9,13 +9,16 @@ namespace Zen.CanonicaLib.UI.Services
     public class OperationGenerator
     {
         private readonly RequestBodyGenerator RequestBodyGenerator;
+        private readonly ParametersGenerator ParametersGenerator;   
         private readonly ResponsesGenerator ResponsesGenerator;
 
         public OperationGenerator(
             RequestBodyGenerator requestBodyGenerator,
+            ParametersGenerator parametersGenerator,
             ResponsesGenerator responsesGenerator)
         {
             RequestBodyGenerator = requestBodyGenerator;
+            ParametersGenerator = parametersGenerator;
             ResponsesGenerator = responsesGenerator;
         }
 
@@ -35,6 +38,7 @@ namespace Zen.CanonicaLib.UI.Services
                 Summary = endpointDefinition.GetXmlDocsSummary().IfEmpty(endpointDefinition.Name),
                 Description = endpointDefinition.GetXmlDocsRemarks().IfEmpty(null),
                 RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
+                Parameters = ParametersGenerator.GenerateParameters(endpointDefinition, generatorContext),
                 Responses = ResponsesGenerator.GenerateResponses(endpointDefinition)
             };
 

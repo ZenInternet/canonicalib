@@ -3,7 +3,7 @@
     /// <summary>
     /// Configuration options for CanonicaLib
     /// </summary>
-    public record WebApplicationOptions
+    public record CanonicaLibOptions
     {
         public string PageTitle { get; set; } = "CanonicaLib Assemblies";
         /// <summary>
