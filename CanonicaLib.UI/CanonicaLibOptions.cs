@@ -30,5 +30,7 @@ namespace Zen.CanonicaLib.UI
     public record PostProcessors
     {
         public Func<IList<IOpenApiParameter>?, IList<IOpenApiParameter>?> ParametersProcessor { get; init; } = null!;
+
+        public Func<IDictionary<string, IOpenApiHeader>?, IDictionary<string, IOpenApiHeader>?> HeadersProcessor { get; init; } = null!;
     }
 }

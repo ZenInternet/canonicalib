@@ -8,28 +8,40 @@ namespace Zen.CanonicaLib.UI.Services
     {
         private readonly ExamplesGenerator ExamplesGenerator;
 
-        public ResponsesGenerator(ExamplesGenerator examplesGenerator)
+        private readonly HeadersGenerator HeadersGenerator;
+
+        public ResponsesGenerator(ExamplesGenerator examplesGenerator, HeadersGenerator headersGenerator)
         {
             ExamplesGenerator = examplesGenerator;
+            HeadersGenerator = headersGenerator;
         }
 
-        public OpenApiResponses GenerateResponses(MethodInfo endpointDefinition)
+        public OpenApiResponses GenerateResponses(MethodInfo endpointDefinition, GeneratorContext generatorContext)
         {
             var responses = new OpenApiResponses();
 
             var attributes = endpointDefinition.GetCustomAttributes<ResponseAttribute>();
             var endpointExamples = endpointDefinition.GetCustomAttributes<ResponseExampleAttribute>();
+            var endpointHeaders = endpointDefinition.GetCustomAttributes<ResponseHeaderAttribute>();
+
             foreach (var attribute in attributes)
             {
                 var statusCode = attribute.StatusCode.ToString();
                 var description = attribute.Description ?? string.Empty;
                 var responseType = attribute.Type?.ToString();
                 var exampleAttributes = endpointExamples.Where(x => x.StatusCode == attribute.StatusCode);
+                var headerAttributes = endpointHeaders.Where(x => x.StatusCode == attribute.StatusCode);
 
                 IDictionary<string, IOpenApiExample>? examples = null;
                 if (exampleAttributes != null)
                 {
                     ExamplesGenerator.GenerateExamples(exampleAttributes, out examples);
+                }
+
+                IDictionary<string, IOpenApiHeader>? headers = null;
+                if (headerAttributes != null)
+                {
+                    HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext, out headers);
                 }
 
                 responses[statusCode] = new OpenApiResponse
@@ -40,10 +52,11 @@ namespace Zen.CanonicaLib.UI.Services
                         { "application/json", new OpenApiMediaType()
                             {
                                 Schema = responseType != null ? new OpenApiSchemaReference(responseType) : null,
-                                Examples = examples
+                                Examples = examples,
                             }
                         }
-                    }
+                    },
+                    Headers = headers,
                 };
             }
 

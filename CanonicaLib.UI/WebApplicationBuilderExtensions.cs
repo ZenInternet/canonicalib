@@ -49,6 +49,7 @@ namespace Zen.CanonicaLib.UI
             services.AddTransient<ComponentsGenerator>();
             services.AddTransient<DocumentGenerator>();
             services.AddTransient<ExamplesGenerator>();
+            services.AddTransient<HeadersGenerator>();
             services.AddTransient<InfoGenerator>();
             services.AddTransient<OperationGenerator>();
             services.AddTransient<ParametersGenerator>();

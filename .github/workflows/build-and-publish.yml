@@ -110,7 +110,8 @@ jobs:
           --configuration Release \
           --no-build \
           --output ./packages \
-          -p:PackageVersion=${{ steps.version.outputs.version }}
+          -p:PackageVersion=${{ steps.version.outputs.version }} \
+          -p:MinVerSkip=true
     
     - name: Pack CanonicaLib.UI
       run: |
@@ -118,7 +119,8 @@ jobs:
           --configuration Release \
           --no-build \
           --output ./packages \
-          -p:PackageVersion=${{ steps.version.outputs.version }}
+          -p:PackageVersion=${{ steps.version.outputs.version }} \
+          -p:MinVerSkip=true
     
     - name: Upload packages as artifacts
       uses: actions/upload-artifact@v4
@@ -231,10 +233,10 @@ jobs:
       run: dotnet test --configuration Release --no-build --verbosity normal
     
     - name: Pack CanonicaLib.DataAnnotations
-      run: dotnet pack CanonicaLib.DataAnnotations/CanonicaLib.DataAnnotations.csproj --configuration Release --no-build --output ./packages
+      run: dotnet pack CanonicaLib.DataAnnotations/CanonicaLib.DataAnnotations.csproj --configuration Release --no-build --output ./packages -p:MinVerSkip=true
     
     - name: Pack CanonicaLib.UI
-      run: dotnet pack CanonicaLib.UI/CanonicaLib.UI.csproj --configuration Release --no-build --output ./packages
+      run: dotnet pack CanonicaLib.UI/CanonicaLib.UI.csproj --configuration Release --no-build --output ./packages -p:MinVerSkip=true
     
     - name: Publish to NuGet.org (manual tag)
       run: |
