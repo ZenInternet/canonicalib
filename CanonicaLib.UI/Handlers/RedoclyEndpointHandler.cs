@@ -16,7 +16,7 @@ namespace Zen.CanonicaLib.UI.Handlers
     {
         public static async Task HandleRedoclyRequest(HttpContext context)
         {
-            var options = context.RequestServices.GetRequiredService<WebApplicationOptions>() ?? new WebApplicationOptions();
+            var options = context.RequestServices.GetRequiredService<CanonicaLibOptions>() ?? new CanonicaLibOptions();
             var discoveryService = context.RequestServices.GetRequiredService<DiscoveryService>();
             var razorViewEngine = context.RequestServices.GetRequiredService<IRazorViewEngine>();
             var tempDataProvider = context.RequestServices.GetRequiredService<ITempDataDictionaryFactory>();

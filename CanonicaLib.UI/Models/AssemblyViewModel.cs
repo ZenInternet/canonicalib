@@ -7,6 +7,6 @@ namespace Zen.CanonicaLib.UI.Models
         public string AssemblyName { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public OpenApiDocument? Document { get; set; }
-        public WebApplicationOptions Options { get; set; } = new();
+        public CanonicaLibOptions Options { get; set; } = new();
     }
 }

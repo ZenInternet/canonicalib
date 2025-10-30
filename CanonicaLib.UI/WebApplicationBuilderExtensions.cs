@@ -9,9 +9,9 @@ namespace Zen.CanonicaLib.UI
 {
     public static class WebApplicationBuilderExtensions
     {
-        public static IServiceCollection AddCanonicaLib(this IServiceCollection services, Func<WebApplicationOptions>? optionsFactory = null)
+        public static IServiceCollection AddCanonicaLib(this IServiceCollection services, Func<CanonicaLibOptions>? optionsFactory = null)
         {
-            services.AddSingleton(optionsFactory?.Invoke() ?? new WebApplicationOptions());
+            services.AddSingleton(optionsFactory?.Invoke() ?? new CanonicaLibOptions());
 
             services.AddTransient<DiscoveryService>();
 
@@ -51,6 +51,7 @@ namespace Zen.CanonicaLib.UI
             services.AddTransient<ExamplesGenerator>();
             services.AddTransient<InfoGenerator>();
             services.AddTransient<OperationGenerator>();
+            services.AddTransient<ParametersGenerator>();
             services.AddTransient<PathsGenerator>();
             services.AddTransient<RequestBodyGenerator>();
             services.AddTransient<ResponsesGenerator>();
