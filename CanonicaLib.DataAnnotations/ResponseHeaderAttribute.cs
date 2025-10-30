@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 
 namespace Zen.CanonicaLib.DataAnnotations
 {

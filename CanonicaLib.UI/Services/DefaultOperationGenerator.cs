@@ -3,19 +3,20 @@ using Namotion.Reflection;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class OperationGenerator
+    public class DefaultOperationGenerator : IOperationGenerator
     {
-        private readonly RequestBodyGenerator RequestBodyGenerator;
-        private readonly ParametersGenerator ParametersGenerator;   
-        private readonly ResponsesGenerator ResponsesGenerator;
+        private readonly IRequestBodyGenerator RequestBodyGenerator;
+        private readonly IParametersGenerator ParametersGenerator;
+        private readonly IResponsesGenerator ResponsesGenerator;
 
-        public OperationGenerator(
-            RequestBodyGenerator requestBodyGenerator,
-            ParametersGenerator parametersGenerator,
-            ResponsesGenerator responsesGenerator)
+        public DefaultOperationGenerator(
+            IRequestBodyGenerator requestBodyGenerator,
+            IParametersGenerator parametersGenerator,
+            IResponsesGenerator responsesGenerator)
         {
             RequestBodyGenerator = requestBodyGenerator;
             ParametersGenerator = parametersGenerator;

@@ -1,13 +1,14 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class InfoGenerator
+    public class DefaultInfoGenerator : IInfoGenerator
     {
-        private readonly DiscoveryService DiscoveryService;
+        private readonly IDiscoveryService DiscoveryService;
 
-        public InfoGenerator(DiscoveryService discoveryService)
+        public DefaultInfoGenerator(IDiscoveryService discoveryService)
         {
             DiscoveryService = discoveryService;
         }
@@ -26,7 +27,7 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 Title = library.FriendlyName,
                 Version = assembly.GetName().Version?.ToString() ?? "0.0.0.0",
-                Description = description, 
+                Description = description,
             };
             generatorContext.Document.Info = info;
         }

@@ -1,15 +1,16 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class RequestBodyGenerator
+    public class DefaultRequestBodyGenerator : IRequestBodyGenerator
     {
-        private readonly SchemaGenerator SchemaGenerator;
-        private readonly ExamplesGenerator ExamplesGenerator;
+        private readonly ISchemaGenerator SchemaGenerator;
+        private readonly IExamplesGenerator ExamplesGenerator;
 
-        public RequestBodyGenerator(SchemaGenerator schemaGenerator, ExamplesGenerator examplesGenerator)
+        public DefaultRequestBodyGenerator(ISchemaGenerator schemaGenerator, IExamplesGenerator examplesGenerator)
         {
             SchemaGenerator = schemaGenerator;
             ExamplesGenerator = examplesGenerator;

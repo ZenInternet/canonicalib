@@ -3,10 +3,11 @@ using Namotion.Reflection;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class DiscoveryService
+    public class DefaultDiscoveryService : IDiscoveryService
     {
         public List<Assembly> GetAllAssemblies()
         {
@@ -50,11 +51,11 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(OpenApiPathAttribute), inherit: false).Any())
                 .ToList();
 
-        internal IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition) => controllerDefinition.GetMethods()
+        public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition) => controllerDefinition.GetMethods()
                 .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
                 .ToList();
 
-        internal IList<Type> FindSchemaDefinitions(Assembly assembly)
+        public IList<Type> FindSchemaDefinitions(Assembly assembly)
         {
             var schemaTypes = assembly.GetTypes()
                 .Where(type => type.IsClass || type.IsEnum || type.IsValueType)
@@ -81,7 +82,7 @@ namespace Zen.CanonicaLib.UI.Services
             return schemaTypes;
         }
 
-        internal ISet<OpenApiTag> FindControllerTags(Assembly assembly)
+        public ISet<OpenApiTag> FindControllerTags(Assembly assembly)
         {
             var tagAttributes = FindControllerDefinitions(assembly)
                   .Select(cd => new { TagAttribute = cd.GetCustomAttribute<OpenApiTagAttribute>(), Summary = cd.GetXmlDocsSummary() })
@@ -123,6 +124,7 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(name => name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
                 .Select(name => name.Replace($"{assembly.FullName.Split(",")[0]}.Docs.", ""))
                 .ToList();
+
 
             return documentNames;
         }

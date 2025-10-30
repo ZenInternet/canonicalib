@@ -1,19 +1,21 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class PathsGenerator
+    public class DefaultPathsGenerator : IPathsGenerator
     {
-        private readonly DiscoveryService DiscoveryService;
-        private readonly OperationGenerator OperationGenerator;
+        private readonly IDiscoveryService DiscoveryService;
+        private readonly IOperationGenerator OperationGenerator;
 
-        public PathsGenerator(DiscoveryService discoveryService, OperationGenerator operationGenerator)
+        public DefaultPathsGenerator(IDiscoveryService discoveryService, IOperationGenerator operationGenerator)
         {
             DiscoveryService = discoveryService;
             OperationGenerator = operationGenerator;
         }
+
         public void GeneratePaths(GeneratorContext generatorContext)
         {
             var assembly = generatorContext.Assembly;

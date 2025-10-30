@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
-using Zen.CanonicaLib.UI.Services;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Handlers
 {
@@ -9,7 +9,7 @@ namespace Zen.CanonicaLib.UI.Handlers
     {
         public static async Task HandleAssembliesRequest(HttpContext context)
         {
-            var discoveryService = context.RequestServices.GetRequiredService<DiscoveryService>();
+            var discoveryService = context.RequestServices.GetRequiredService<IDiscoveryService>();
 
             var assemblies = discoveryService.FindCanonicalAssemblies();
 

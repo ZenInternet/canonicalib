@@ -1,14 +1,14 @@
 ﻿using Microsoft.OpenApi;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class SchemasGenerator
+    public class DefaultSchemasGenerator : ISchemasGenerator
     {
-        private readonly DiscoveryService DiscoveryService;
+        private readonly IDiscoveryService DiscoveryService;
+        private readonly ISchemaGenerator SchemaGenerator;
 
-        private readonly SchemaGenerator SchemaGenerator;
-
-        public SchemasGenerator(DiscoveryService discoveryService, SchemaGenerator schemaGenerator)
+        public DefaultSchemasGenerator(IDiscoveryService discoveryService, ISchemaGenerator schemaGenerator)
         {
             DiscoveryService = discoveryService;
             SchemaGenerator = schemaGenerator;

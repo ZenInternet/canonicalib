@@ -3,13 +3,14 @@ using Namotion.Reflection;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.OpenApiExtensions;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
     /// <summary>
     /// Generates OpenAPI schemas for types using reflection
     /// </summary>
-    public class SchemaGenerator
+    public class DefaultSchemaGenerator : ISchemaGenerator
     {
         public void GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext, out IOpenApiSchema? openApiSchema)
         {

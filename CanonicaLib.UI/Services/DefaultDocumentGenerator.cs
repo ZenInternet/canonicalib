@@ -1,21 +1,22 @@
 ﻿
 using Microsoft.OpenApi;
 using System.Reflection;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class DocumentGenerator
+    public class DefaultDocumentGenerator : IDocumentGenerator
     {
-        private readonly InfoGenerator InfoGenerator;
-        private readonly PathsGenerator PathsGenerator;
-        private readonly ComponentsGenerator ComponentsGenerator;
-        private readonly TagGroupsGenerator TagGroupsGenerator;
+        private readonly IInfoGenerator InfoGenerator;
+        private readonly IPathsGenerator PathsGenerator;
+        private readonly IComponentsGenerator ComponentsGenerator;
+        private readonly ITagGroupsGenerator TagGroupsGenerator;
 
-        public DocumentGenerator(
-            InfoGenerator infoGenerator,
-            PathsGenerator pathsGenerator,
-            ComponentsGenerator componentsGenerator,
-            TagGroupsGenerator tagGroupsGenerator)
+        public DefaultDocumentGenerator(
+            IInfoGenerator infoGenerator,
+            IPathsGenerator pathsGenerator,
+            IComponentsGenerator componentsGenerator,
+            ITagGroupsGenerator tagGroupsGenerator)
         {
             InfoGenerator = infoGenerator;
             PathsGenerator = pathsGenerator;
@@ -23,7 +24,7 @@ namespace Zen.CanonicaLib.UI.Services
             TagGroupsGenerator = tagGroupsGenerator;
         }
 
-        public OpenApiDocument GenerateDocument(Assembly assembly, DiscoveryService discoveryService)
+        public OpenApiDocument GenerateDocument(Assembly assembly)
         {
 
             var generatorContext = new GeneratorContext(assembly);
