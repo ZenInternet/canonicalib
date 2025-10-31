@@ -21,8 +21,6 @@ namespace Zen.CanonicaLib.UI.Services
             IComponentsGenerator componentsGenerator,
             ITagGroupsGenerator tagGroupsGenerator,
             IWebhooksGenerator webhooksGenerator)
-            ITagGroupsGenerator tagGroupsGenerator,
-            IWebhooksGenerator webhooksGenerator)
         {
             InfoGenerator = infoGenerator;
             ServersGenerator = serversGenerator;
