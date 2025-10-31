@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.OpenApi;
+using System.Collections.Generic;
 using Zen.CanonicaLib.DataAnnotations;
 
 namespace Test.Contract
@@ -8,5 +9,7 @@ namespace Test.Contract
         public string FriendlyName => "Test > Contract";
 
         public IList<OpenApiTagGroup>? TagGroups => null;
+
+        public IList<OpenApiServer>? Servers => null;
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.OpenApi;
 using System.Collections.Generic;
 
 namespace Zen.CanonicaLib.DataAnnotations
