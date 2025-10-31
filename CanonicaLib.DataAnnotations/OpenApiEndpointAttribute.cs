@@ -11,5 +11,11 @@ namespace Zen.CanonicaLib.DataAnnotations
         {
             HttpMethod = httpMethod;
         }
+
+        public OpenApiEndpointAttribute(string httpMethod)
+            :base(null)
+        {
+            HttpMethod = httpMethod;
+        }
     }
 }

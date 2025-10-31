@@ -25,6 +25,8 @@ namespace Zen.CanonicaLib.UI.Services
             try
             {
                 // Generate the OpenAPI schema using reflection
+                var typeName = schemaDefinition.Name;
+
                 openApiSchema = CreateSchemaFromType(schemaDefinition, generatorContext.Schemas, generatorContext.Assembly);
 
                 if (generatorContext.Schemas.ContainsKey(schemaKey))

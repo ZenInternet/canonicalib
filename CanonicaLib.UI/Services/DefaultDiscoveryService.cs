@@ -51,6 +51,11 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(OpenApiPathAttribute), inherit: false).Any())
                 .ToList();
 
+        public IList<Type> FindWebhookDefinitions(Assembly assembly) =>
+            assembly.GetTypes()
+                .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(OpenApiWebhookAttribute), inherit: false).Any())
+                .ToList();
+
         public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition) => controllerDefinition.GetMethods()
                 .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
                 .ToList();
@@ -94,8 +99,9 @@ namespace Zen.CanonicaLib.UI.Services
                 Name = x.TagAttribute!.Tag,
                 Description = x.Summary.IfEmpty(null)
             }).ToHashSet();
-
         }
+
+
         public ILibrary GetLibraryInstance(Assembly assembly)
         {
             var libraries = assembly.GetTypes()
@@ -125,7 +131,6 @@ namespace Zen.CanonicaLib.UI.Services
                 .Select(name => name.Replace($"{assembly.FullName.Split(",")[0]}.Docs.", ""))
                 .ToList();
 
-
             return documentNames;
         }
 
@@ -143,6 +148,20 @@ namespace Zen.CanonicaLib.UI.Services
                 throw new FileNotFoundException($"Document '{documentName}' not found in assembly resources.");
             using var reader = new StreamReader(stream);
             return reader.ReadToEnd();
+        }
+
+        public ISet<OpenApiTag> FindWebhookTags(Assembly assembly)
+        {
+            var tagAttributes = FindWebhookDefinitions(assembly)
+                  .Select(wd => new { TagAttribute = wd.GetCustomAttribute<OpenApiTagAttribute>(), Summary = wd.GetXmlDocsSummary() })
+                  .Where(tag => tag.TagAttribute != null)
+                  .ToList();
+
+            return tagAttributes.Select(x => new OpenApiTag()
+            {
+                Name = x.TagAttribute!.Tag,
+                Description = x.Summary.IfEmpty(null)
+            }).ToHashSet();
         }
     }
 }
