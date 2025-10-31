@@ -11,17 +11,20 @@ namespace Zen.CanonicaLib.UI.Services
         private readonly IPathsGenerator PathsGenerator;
         private readonly IComponentsGenerator ComponentsGenerator;
         private readonly ITagGroupsGenerator TagGroupsGenerator;
+        private readonly IWebhooksGenerator WebhooksGenerator;
 
         public DefaultDocumentGenerator(
             IInfoGenerator infoGenerator,
             IPathsGenerator pathsGenerator,
             IComponentsGenerator componentsGenerator,
-            ITagGroupsGenerator tagGroupsGenerator)
+            ITagGroupsGenerator tagGroupsGenerator,
+            IWebhooksGenerator webhooksGenerator)
         {
             InfoGenerator = infoGenerator;
             PathsGenerator = pathsGenerator;
             ComponentsGenerator = componentsGenerator;
             TagGroupsGenerator = tagGroupsGenerator;
+            WebhooksGenerator = webhooksGenerator;
         }
 
         public OpenApiDocument GenerateDocument(Assembly assembly)
@@ -33,6 +36,7 @@ namespace Zen.CanonicaLib.UI.Services
             ComponentsGenerator.GenerateComponents(generatorContext);
             TagGroupsGenerator.GenerateTagGroups(generatorContext);
             PathsGenerator.GeneratePaths(generatorContext);
+            WebhooksGenerator.GenerateWebhooks(generatorContext);
 
             return generatorContext.Document;
         }

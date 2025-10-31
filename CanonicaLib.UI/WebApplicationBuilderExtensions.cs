@@ -60,6 +60,7 @@ namespace Zen.CanonicaLib.UI
             services.AddTransient<ISchemaGenerator, DefaultSchemaGenerator>();
             services.AddTransient<ISchemasGenerator, DefaultSchemasGenerator>();
             services.AddTransient<ITagGroupsGenerator, DefaultTagGroupsGenerator>();
+            services.AddTransient<IWebhooksGenerator, DefaultWebhooksGenerator>();
 
             return services;
         }

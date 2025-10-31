@@ -9,11 +9,13 @@ namespace Zen.CanonicaLib.UI.Services
     {
         private readonly IExamplesGenerator ExamplesGenerator;
         private readonly IHeadersGenerator HeadersGenerator;
+        private readonly ISchemaGenerator SchemaGenerator;
 
-        public DefaultResponsesGenerator(IExamplesGenerator examplesGenerator, IHeadersGenerator headersGenerator)
+        public DefaultResponsesGenerator(IExamplesGenerator examplesGenerator, IHeadersGenerator headersGenerator, ISchemaGenerator schemaGenerator)
         {
             ExamplesGenerator = examplesGenerator;
             HeadersGenerator = headersGenerator;
+            SchemaGenerator = schemaGenerator;
         }
 
         public OpenApiResponses GenerateResponses(MethodInfo endpointDefinition, GeneratorContext generatorContext)
@@ -28,7 +30,7 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 var statusCode = attribute.StatusCode.ToString();
                 var description = attribute.Description ?? string.Empty;
-                var responseType = attribute.Type?.ToString();
+                var responseType = attribute.Type;
                 var exampleAttributes = endpointExamples.Where(x => x.StatusCode == attribute.StatusCode);
                 var headerAttributes = endpointHeaders.Where(x => x.StatusCode == attribute.StatusCode);
 
@@ -44,6 +46,8 @@ namespace Zen.CanonicaLib.UI.Services
                     HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext, out headers);
                 }
 
+                IOpenApiSchema? schema;
+                SchemaGenerator.GenerateSchema(responseType, generatorContext, out schema);
                 responses[statusCode] = new OpenApiResponse
                 {
                     Description = description,
@@ -51,7 +55,7 @@ namespace Zen.CanonicaLib.UI.Services
                     {
                         { "application/json", new OpenApiMediaType()
                             {
-                                Schema = responseType != null ? new OpenApiSchemaReference(responseType) : null,
+                                Schema = schema,
                                 Examples = examples,
                             }
                         }
