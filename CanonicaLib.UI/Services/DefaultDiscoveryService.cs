@@ -131,6 +131,7 @@ namespace Zen.CanonicaLib.UI.Services
                 .Select(name => name.Replace($"{assembly.FullName.Split(",")[0]}.Docs.", ""))
                 .ToList();
 
+
             return documentNames;
         }
 

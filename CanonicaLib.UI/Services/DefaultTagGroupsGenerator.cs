@@ -107,7 +107,6 @@ namespace Zen.CanonicaLib.UI.Services
                 }
             }
 
-
             if (tagGroups.Any())
             {
                 generatorContext.Document.Extensions!.Add("x-tagGroups", new TagGroupsExtension(tagGroups));
