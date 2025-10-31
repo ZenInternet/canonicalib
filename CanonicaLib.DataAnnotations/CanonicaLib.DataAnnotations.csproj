@@ -3,18 +3,25 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>enable</Nullable>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<WarningsAsErrors />
+		<WarningsNotAsErrors>NU1605</WarningsNotAsErrors>
 		<IsPackable>true</IsPackable>
 		<RootNamespace>Zen.CanonicaLib.DataAnnotations</RootNamespace>
 		<AssemblyName>Zen.CanonicaLib.DataAnnotations</AssemblyName>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+		<NoWarn>$(NoWarn);CS1591</NoWarn> <!-- Missing XML comment warnings for private members -->
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<AnalysisLevel>latest</AnalysisLevel>
 	</PropertyGroup>
 
 	<!-- NuGet Package Metadata -->
 	<PropertyGroup>
 		<PackageId>Zen.CanonicaLib.DataAnnotations</PackageId>
-		<!-- Remove PackageVersion - MinVer will handle this -->
 		<Title>CanonicaLib Data Annotations</Title>
-		<Description>Core data annotations and attributes for defining canonical contracts in CanonicaLib. Provides PathAttribute, EndpointAttribute, ResponseAttribute and other essential annotations for creating shared library definitions.</Description>
+		<Description>Core data annotations and attributes for defining canonical contracts in CanonicaLib. Provides comprehensive attributes for creating shared library definitions with full OpenAPI integration.</Description>
 		<Summary>Core annotations for defining canonical contracts and API definitions</Summary>
 		<Authors>Zen Internet Ltd</Authors>
 		<Company>Zen Internet Ltd</Company>
@@ -25,10 +32,12 @@
 		<RepositoryUrl>https://github.com/ZenInternet/canonicalib</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>annotations;attributes;canonical;contracts;api;dotnet;netstandard</PackageTags>
+		<PackageTags>annotations;attributes;canonical;contracts;api;dotnet;netstandard;openapi</PackageTags>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Deterministic>true</Deterministic>
+		<ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -38,6 +47,18 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
 		<PackageReference Include="Microsoft.OpenApi" Version="2.3.8" />
+		<PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<!-- Include additional analyzer packages for enhanced code quality -->
+	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
+		<PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 </Project>

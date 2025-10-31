@@ -66,6 +66,7 @@ namespace Zen.CanonicaLib.UI.Services
             var parameter = new OpenApiParameter()
             {
                 Name = parameterAttribute?.Name ?? endpointParameter.Name,
+                Description = parameterAttribute?.Description,
                 In = parameterLocation,
                 Required = parameterAttribute?.Required ?? !endpointParameter.IsOptional,
                 Schema = schema
