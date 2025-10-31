@@ -50,21 +50,5 @@ namespace Zen.CanonicaLib.DataAnnotations
         {
             HttpMethod = httpMethod;
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="OpenApiEndpointAttribute"/> class
-        /// with the specified HTTP method and no explicit path pattern.
-        /// </summary>
-        /// <param name="httpMethod">The HTTP method for the endpoint operation.</param>
-        /// <remarks>
-        /// When no path pattern is specified, the path will be inferred from other sources
-        /// such as the method name or other attributes.
-        /// Use constants from the <see cref="Methods"/> class for standard HTTP methods.
-        /// </remarks>
-        public OpenApiEndpointAttribute(string httpMethod)
-            : base(null)
-        {
-            HttpMethod = httpMethod;
-        }
     }
 }

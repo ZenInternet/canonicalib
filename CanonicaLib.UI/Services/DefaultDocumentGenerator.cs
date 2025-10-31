@@ -21,12 +21,15 @@ namespace Zen.CanonicaLib.UI.Services
             IComponentsGenerator componentsGenerator,
             ITagGroupsGenerator tagGroupsGenerator,
             IWebhooksGenerator webhooksGenerator)
+            ITagGroupsGenerator tagGroupsGenerator,
+            IWebhooksGenerator webhooksGenerator)
         {
             InfoGenerator = infoGenerator;
             ServersGenerator = serversGenerator;
             PathsGenerator = pathsGenerator;
             ComponentsGenerator = componentsGenerator;
             TagGroupsGenerator = tagGroupsGenerator;
+            WebhooksGenerator = webhooksGenerator;
             WebhooksGenerator = webhooksGenerator;
         }
 
@@ -40,6 +43,7 @@ namespace Zen.CanonicaLib.UI.Services
             ComponentsGenerator.GenerateComponents(generatorContext);
             TagGroupsGenerator.GenerateTagGroups(generatorContext);
             PathsGenerator.GeneratePaths(generatorContext);
+            WebhooksGenerator.GenerateWebhooks(generatorContext);
             WebhooksGenerator.GenerateWebhooks(generatorContext);
 
             return generatorContext.Document;
