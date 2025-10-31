@@ -57,6 +57,7 @@ namespace Zen.CanonicaLib.UI
             services.AddTransient<IPathsGenerator, DefaultPathsGenerator>();
             services.AddTransient<IRequestBodyGenerator, DefaultRequestBodyGenerator>();
             services.AddTransient<IResponsesGenerator, DefaultResponsesGenerator>();
+            services.AddTransient<IServersGenerator, DefaultServersGenerator>();
             services.AddTransient<ISchemaGenerator, DefaultSchemaGenerator>();
             services.AddTransient<ISchemasGenerator, DefaultSchemasGenerator>();
             services.AddTransient<ITagGroupsGenerator, DefaultTagGroupsGenerator>();

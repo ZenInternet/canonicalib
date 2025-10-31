@@ -13,7 +13,7 @@ namespace Zen.CanonicaLib.DataAnnotations
 
         public string? Description { get; set; }
 
-        public ResponseHeaderAttribute(Type? type, int statusCode, string name, string description)
+        public ResponseHeaderAttribute(Type type, int statusCode, string name, string description)
         {
             Type = type;
             StatusCode = statusCode;
@@ -21,7 +21,7 @@ namespace Zen.CanonicaLib.DataAnnotations
             Description = description;
         }
 
-        public ResponseHeaderAttribute(Type? type, int statusCode, string name)
+        public ResponseHeaderAttribute(Type type, int statusCode, string name)
         {
             Type = type;
             StatusCode = statusCode;

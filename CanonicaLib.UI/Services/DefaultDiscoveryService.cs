@@ -123,6 +123,24 @@ namespace Zen.CanonicaLib.UI.Services
             return libraryInstance;
         }
 
+        public IService? GetServiceInstance(Assembly assembly)
+        {
+            var services = assembly.GetTypes()
+                .Where(t => typeof(IService).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            if (services == null)
+                return null;
+
+            if (services.Count() > 1)
+                throw new InvalidOperationException("Multiple implementations of IService found in the target assembly.");
+
+            var service = services.First();
+
+            IService serviceInstance = (IService)Activator.CreateInstance(service)!;
+
+            return serviceInstance;
+        }
+
         public IList<string> GetDocumentList(Assembly assembly)
         {
             // search embedded resources for markdown documents
