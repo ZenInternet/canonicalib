@@ -5,7 +5,7 @@ namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
     public interface IExamplesGenerator
     {
-        void GenerateExample(ExampleAttribute exampleAttribute, out IOpenApiExample example);
-        void GenerateExamples(IEnumerable<ExampleAttribute> exampleAttributes, out IDictionary<string, IOpenApiExample>? examples);
+        IOpenApiExample GenerateExample(ExampleAttribute exampleAttribute);
+        IDictionary<string, IOpenApiExample>? GenerateExamples(IEnumerable<ExampleAttribute> exampleAttributes);
     }
 }

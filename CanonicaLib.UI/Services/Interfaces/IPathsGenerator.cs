@@ -1,7 +1,9 @@
+using Microsoft.OpenApi;
+
 namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
     public interface IPathsGenerator
     {
-        void GeneratePaths(GeneratorContext generatorContext);
+        OpenApiPaths GeneratePaths(GeneratorContext generatorContext);
     }
 }

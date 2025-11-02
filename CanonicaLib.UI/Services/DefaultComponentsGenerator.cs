@@ -1,25 +1,58 @@
-﻿using Microsoft.OpenApi;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
-    public class DefaultComponentsGenerator : IComponentsGenerator
+    /// <summary>
+    /// Default implementation of <see cref="IComponentsGenerator"/> that generates 
+    /// the components section of OpenAPI documents.
+    /// </summary>
+    public sealed class DefaultComponentsGenerator : IComponentsGenerator
     {
+        private readonly ISchemasGenerator _schemasGenerator;
+        private readonly ILogger<DefaultComponentsGenerator> _logger;
 
-        private readonly ISchemasGenerator SchemasGenerator;
-
-        public DefaultComponentsGenerator(ISchemasGenerator schemasGenerator)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultComponentsGenerator"/> class.
+        /// </summary>
+        /// <param name="schemasGenerator">The generator for OpenAPI schemas.</param>
+        /// <param name="logger">The logger for diagnostic information.</param>
+        /// <exception cref="ArgumentNullException">Thrown when any required parameter is null.</exception>
+        public DefaultComponentsGenerator(
+            ISchemasGenerator schemasGenerator,
+            ILogger<DefaultComponentsGenerator> logger)
         {
-            SchemasGenerator = schemasGenerator;
+            _schemasGenerator = schemasGenerator ?? throw new ArgumentNullException(nameof(schemasGenerator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void GenerateComponents(GeneratorContext generatorContext)
+        /// <summary>
+        /// Generates the components section for the OpenAPI document.
+        /// </summary>
+        /// <param name="generatorContext">The context containing the document and assembly information.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="generatorContext"/> is null.</exception>
+        public OpenApiComponents? GenerateComponents(GeneratorContext generatorContext)
         {
-            SchemasGenerator.GenerateSchemas(generatorContext);
-            generatorContext.Document.Components = new OpenApiComponents()
+            if (generatorContext == null)
+                throw new ArgumentNullException(nameof(generatorContext));
+
+            _logger.LogDebug("Generating components section for assembly: {AssemblyName}",
+                generatorContext.Assembly.FullName);
+
+            try
             {
-                Schemas = generatorContext.Schemas
-            };
+                return new OpenApiComponents()
+                {
+                    Schemas = _schemasGenerator.GenerateSchemas(generatorContext)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate components section for assembly: {AssemblyName}",
+                    generatorContext.Assembly.FullName);
+                throw;
+            }
         }
     }
 }

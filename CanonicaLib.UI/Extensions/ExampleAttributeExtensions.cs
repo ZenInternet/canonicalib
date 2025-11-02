@@ -11,20 +11,20 @@ namespace Zen.CanonicaLib.UI.Extensions
         {
             var example = Activator.CreateInstance(exampleAttribute.ExampleType);
 
-            bool implementsIExample = example.GetType().GetInterfaces()
-                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IExample<>));
+            bool implementsIExample = example?.GetType().GetInterfaces()
+                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IExample<>)) ?? false;
 
             if (!implementsIExample)
             {
                 throw new InvalidOperationException($"Instance of type {exampleAttribute.ExampleType.FullName} does not implement IExample<T>");
             }
 
-            var exampleInterface = example.GetType().GetInterfaces()
-                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IExample<>));
+            var exampleInterface = example?.GetType().GetInterfaces()
+                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IExample<>))!;
             var exampleProperty = exampleInterface.GetProperty("Example");
-            var typedExample = exampleProperty.GetValue(example);
+            var typedExample = exampleProperty!.GetValue(example);
 
-            return typedExample;
+            return typedExample!;
         }
 
         public static string GetName(this ExampleAttribute exampleAttribute)
@@ -33,7 +33,7 @@ namespace Zen.CanonicaLib.UI.Extensions
 
             var example = Activator.CreateInstance(exampleAttribute.ExampleType);
             var nameProperty = exampleAttribute.ExampleType.GetProperty("Name");
-            var name = nameProperty.GetValue(example);
+            var name = nameProperty?.GetValue(example);
 
             return (string?)name ?? summary ?? string.Empty;
         }

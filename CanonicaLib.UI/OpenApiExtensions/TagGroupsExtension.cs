@@ -25,7 +25,7 @@ namespace Zen.CanonicaLib.UI.OpenApiExtensions
                 writer.WriteStartArray();
                 foreach (var tag in tagGroup.Tags)
                 {
-                    writer.WriteValue(tag.Name);
+                    writer.WriteValue(tag!.Name!);
                 }
                 writer.WriteEndArray();
 

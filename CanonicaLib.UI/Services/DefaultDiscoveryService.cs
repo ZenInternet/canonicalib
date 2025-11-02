@@ -42,7 +42,7 @@ namespace Zen.CanonicaLib.UI.Services
 
         public Assembly? FindCanonicalAssembly(string assemblyName) =>
             GetAllAssemblies()
-                .FirstOrDefault(assembly => assembly.GetName().Name.ToLowerInvariant() == assemblyName.ToLowerInvariant() &&
+                .FirstOrDefault(assembly => assembly.GetName().Name?.ToLowerInvariant() == assemblyName.ToLowerInvariant() &&
                     assembly.GetReferencedAssemblies()
                         .Any(referencedAssembly => referencedAssembly.Name == "Zen.CanonicaLib.DataAnnotations"));
 
@@ -128,7 +128,7 @@ namespace Zen.CanonicaLib.UI.Services
             var services = assembly.GetTypes()
                 .Where(t => typeof(IService).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
-            if (services == null)
+            if (services == null || services.Count() == 0)
                 return null;
 
             if (services.Count() > 1)
@@ -146,7 +146,7 @@ namespace Zen.CanonicaLib.UI.Services
             // search embedded resources for markdown documents
             var documentNames = assembly.GetManifestResourceNames()
                 .Where(name => name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-                .Select(name => name.Replace($"{assembly.FullName.Split(",")[0]}.Docs.", ""))
+                .Select(name => name.Replace($"{assembly.FullName?.Split(",")[0]}.Docs.", ""))
                 .ToList();
 
 
@@ -161,7 +161,7 @@ namespace Zen.CanonicaLib.UI.Services
 
         public string GetDocumentContent(Assembly assembly, string documentName)
         {
-            var resourceName = $"{assembly.FullName.Split(",")[0]}.Docs.{documentName}";
+            var resourceName = $"{assembly.FullName?.Split(",")[0]}.Docs.{documentName}";
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
                 throw new FileNotFoundException($"Document '{documentName}' not found in assembly resources.");

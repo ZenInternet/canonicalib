@@ -13,7 +13,7 @@ namespace Zen.CanonicaLib.UI.Services
             DiscoveryService = discoveryService;
         }
 
-        public void GenerateInfo(GeneratorContext generatorContext)
+        public OpenApiInfo GenerateInfo(GeneratorContext generatorContext)
         {
             var assembly = generatorContext.Assembly;
             var library = DiscoveryService.GetLibraryInstance(assembly);
@@ -23,13 +23,12 @@ namespace Zen.CanonicaLib.UI.Services
                 description += "\n\n" + DiscoveryService.GetDocumentContent(assembly, "Index.md");
             }
 
-            var info = new OpenApiInfo
+            return new OpenApiInfo
             {
                 Title = library.FriendlyName,
                 Version = assembly.GetName().Version?.ToString() ?? "0.0.0.0",
                 Description = description,
             };
-            generatorContext.Document.Info = info;
         }
     }
 }

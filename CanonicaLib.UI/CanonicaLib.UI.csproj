@@ -4,17 +4,24 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<WarningsAsErrors />
+		<WarningsNotAsErrors>NU1605</WarningsNotAsErrors>
 		<IsPackable>true</IsPackable>
 		<RootNamespace>Zen.CanonicaLib.UI</RootNamespace>
 		<AssemblyName>Zen.CanonicaLib.UI</AssemblyName>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+		<NoWarn>$(NoWarn);CS1591</NoWarn> <!-- Missing XML comment warnings for private members -->
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<AnalysisLevel>latest</AnalysisLevel>
 	</PropertyGroup>
 
 	<!-- NuGet Package Metadata -->
 	<PropertyGroup>
 		<PackageId>Zen.CanonicaLib.UI</PackageId>
-		<!-- Remove PackageVersion - MinVer will handle this -->
 		<Title>CanonicaLib UI Services</Title>
 		<Description>Provides UI services and OpenAPI generation capabilities for CanonicaLib. Includes schema generation, discovery services, and OpenAPI specification creation from canonical C# definitions.</Description>
 		<Summary>OpenAPI generation and UI services for CanonicaLib canonical contracts</Summary>
@@ -31,6 +38,8 @@
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Deterministic>true</Deterministic>
+		<ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
