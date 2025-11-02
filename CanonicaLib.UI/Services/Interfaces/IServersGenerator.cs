@@ -1,8 +1,9 @@
-﻿namespace Zen.CanonicaLib.UI.Services.Interfaces
+﻿using Microsoft.OpenApi;
+
+namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
     public interface IServersGenerator
     {
-
-        void GenerateServers(GeneratorContext generatorContext);
+        IList<OpenApiServer>? GenerateServers(GeneratorContext generatorContext);
     }
 }

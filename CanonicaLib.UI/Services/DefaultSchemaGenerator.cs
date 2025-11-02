@@ -12,7 +12,7 @@ namespace Zen.CanonicaLib.UI.Services
     /// </summary>
     public class DefaultSchemaGenerator : ISchemaGenerator
     {
-        public void GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext, out IOpenApiSchema? openApiSchema)
+        public IOpenApiSchema? GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext)
         {
             if (schemaDefinition == null)
                 throw new ArgumentNullException(nameof(schemaDefinition));
@@ -27,13 +27,15 @@ namespace Zen.CanonicaLib.UI.Services
                 // Generate the OpenAPI schema using reflection
                 var typeName = schemaDefinition.Name;
 
-                openApiSchema = CreateSchemaFromType(schemaDefinition, generatorContext.Schemas, generatorContext.Assembly);
+                var openApiSchema = CreateSchemaFromType(schemaDefinition, generatorContext.Schemas, generatorContext.Assembly);
 
                 if (generatorContext.Schemas.ContainsKey(schemaKey))
                 {
                     // Update the placeholder in the schemas dictionary
                     generatorContext.Schemas[schemaKey] = openApiSchema;
                 }
+
+                return openApiSchema;
             }
             catch (Exception ex)
             {
@@ -46,7 +48,7 @@ namespace Zen.CanonicaLib.UI.Services
             return type.FullName ?? type.Name;
         }
 
-        private OpenApiSchema CreateSchemaFromType(Type type, Dictionary<string, IOpenApiSchema> existingSchemas, Assembly targetAssembly)
+        private OpenApiSchema CreateSchemaFromType(Type type, IDictionary<string, IOpenApiSchema> existingSchemas, Assembly targetAssembly)
         {
             var schema = new OpenApiSchema();
 
@@ -137,7 +139,7 @@ namespace Zen.CanonicaLib.UI.Services
             return schema;
         }
 
-        private IOpenApiSchema CreateSchemaOrReference(Type type, Dictionary<string, IOpenApiSchema> existingSchemas, Assembly targetAssembly)
+        private IOpenApiSchema CreateSchemaOrReference(Type type, IDictionary<string, IOpenApiSchema> existingSchemas, Assembly targetAssembly)
         {
             // Handle nullable types
             if (IsNullableType(type))

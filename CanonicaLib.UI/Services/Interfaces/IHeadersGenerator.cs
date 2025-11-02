@@ -5,6 +5,6 @@ namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
     public interface IHeadersGenerator
     {
-        void GenerateHeaders(IEnumerable<ResponseHeaderAttribute> headerAttributes, GeneratorContext generatorContext, out IDictionary<string, IOpenApiHeader>? headers);
+        IDictionary<string, IOpenApiHeader>? GenerateHeaders(IEnumerable<ResponseHeaderAttribute> headerAttributes, GeneratorContext generatorContext);
     }
 }

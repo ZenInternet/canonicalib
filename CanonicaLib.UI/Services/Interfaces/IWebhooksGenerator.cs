@@ -1,7 +1,9 @@
+using Microsoft.OpenApi;
+
 namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
     public interface IWebhooksGenerator
     {
-        void GenerateWebhooks(GeneratorContext generatorContext);
+        IDictionary<string, IOpenApiPathItem>? GenerateWebhooks(GeneratorContext generatorContext);
     }
 }

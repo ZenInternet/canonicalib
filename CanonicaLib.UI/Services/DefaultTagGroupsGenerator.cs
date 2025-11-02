@@ -16,7 +16,7 @@ namespace Zen.CanonicaLib.UI.Services
             DiscoveryService = discoveryService;
         }
 
-        public void GenerateTagGroups(GeneratorContext generatorContext)
+        public ISet<OpenApiTag>? GenerateTags(GeneratorContext generatorContext)
         {
             var library = DiscoveryService.GetLibraryInstance(generatorContext.Assembly);
             var tags = library.TagGroups?
@@ -65,7 +65,21 @@ namespace Zen.CanonicaLib.UI.Services
                 tags.Add(webhookTag);
             }
 
-            generatorContext.Document.Tags = tags;
+            return tags;
+        }
+
+        public TagGroupsExtension? GenerateTagGroups(GeneratorContext generatorContext)
+        {
+            var library = DiscoveryService.GetLibraryInstance(generatorContext.Assembly);
+            var tags = library.TagGroups?
+                .SelectMany(tg => tg.Tags)
+                .ToHashSet() ?? new HashSet<OpenApiTag>();
+
+            //TODO find all tags in the assembly that aren't in the tag groups and add them as well
+            var controllerTags = DiscoveryService.FindControllerTags(generatorContext.Assembly);
+            var webhookTags = DiscoveryService.FindWebhookTags(generatorContext.Assembly);
+
+            var documents = DiscoveryService.GetDocumentList(generatorContext.Assembly).Where(x => !x.EndsWith("Index.md", StringComparison.InvariantCultureIgnoreCase));
 
             var tagGroups = new List<OpenApiTagGroup>();
 
@@ -106,11 +120,8 @@ namespace Zen.CanonicaLib.UI.Services
                     tagGroups.Add(tagGroup);
                 }
             }
-
-            if (tagGroups.Any())
-            {
-                generatorContext.Document.Extensions!.Add("x-tagGroups", new TagGroupsExtension(tagGroups));
-            }
+            
+            return tagGroups.Any() ? new TagGroupsExtension(tagGroups) : null;
         }
     }
 }

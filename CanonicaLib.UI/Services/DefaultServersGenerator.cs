@@ -1,4 +1,5 @@
-﻿using Zen.CanonicaLib.UI.Services.Interfaces;
+﻿using Microsoft.OpenApi;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
 {
@@ -11,14 +12,16 @@ namespace Zen.CanonicaLib.UI.Services
             DiscoveryService = discoveryService;
         }
 
-        public void GenerateServers(GeneratorContext generatorContext)
+        public IList<OpenApiServer>? GenerateServers(GeneratorContext generatorContext)
         {
             var service = DiscoveryService.GetServiceInstance(generatorContext.Assembly);
 
             if (service?.Servers != null && service.Servers.Any())
             {
-                generatorContext.Document.Servers = service.Servers;
+                return service.Servers;
             }
+
+            return null;
         }
     }
 }

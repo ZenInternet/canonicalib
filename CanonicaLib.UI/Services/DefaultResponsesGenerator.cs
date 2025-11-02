@@ -34,20 +34,11 @@ namespace Zen.CanonicaLib.UI.Services
                 var exampleAttributes = endpointExamples.Where(x => x.StatusCode == attribute.StatusCode);
                 var headerAttributes = endpointHeaders.Where(x => x.StatusCode == attribute.StatusCode);
 
-                IDictionary<string, IOpenApiExample>? examples = null;
-                if (exampleAttributes != null)
-                {
-                    ExamplesGenerator.GenerateExamples(exampleAttributes, out examples);
-                }
-
-                IDictionary<string, IOpenApiHeader>? headers = null;
-                if (headerAttributes != null)
-                {
-                    HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext, out headers);
-                }
-
-                IOpenApiSchema? schema;
-                SchemaGenerator.GenerateSchema(responseType, generatorContext, out schema);
+                IDictionary<string, IOpenApiExample>? examples = exampleAttributes != null ? ExamplesGenerator.GenerateExamples(exampleAttributes) : null;
+                
+                IDictionary<string, IOpenApiHeader>? headers = headerAttributes != null ? HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext) : null;
+                
+                var schema = SchemaGenerator.GenerateSchema(responseType, generatorContext);
                 responses[statusCode] = new OpenApiResponse
                 {
                     Description = description,
