@@ -53,12 +53,6 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 var endpointParameters = FindParameterCandidates(endpointDefinition);
                 
-                if (endpointParameters.Count == 0)
-                {
-                    _logger.LogDebug("No parameter candidates found for endpoint: {EndpointName}", endpointDefinition.Name);
-                    return null;
-                }
-
                 var parameters = GenerateParameterList(endpointParameters, generatorContext);
                 var processedParameters = ApplyPostProcessing(parameters);
 
