@@ -38,19 +38,17 @@ namespace Zen.CanonicaLib.UI.Services
         /// <param name="headerAttributes">The collection of response header attributes.</param>
         /// <param name="generatorContext">The context containing schemas and assembly information.</param>
         /// <exception cref="ArgumentNullException">Thrown when any required parameter is null.</exception>
-        public IDictionary<string, IOpenApiHeader>? GenerateHeaders(IEnumerable<ResponseHeaderAttribute> headerAttributes, GeneratorContext generatorContext)
+        public IDictionary<string, IOpenApiHeader>? GenerateHeaders(IEnumerable<ResponseHeaderAttribute>? headerAttributes, GeneratorContext generatorContext)
         {
-            if (headerAttributes == null)
-                throw new ArgumentNullException(nameof(headerAttributes));
             if (generatorContext == null)
                 throw new ArgumentNullException(nameof(generatorContext));
 
-            var attributesList = headerAttributes.ToList();
-            _logger.LogDebug("Generating headers from {Count} header attributes", attributesList.Count);
+            var attributesList = headerAttributes?.ToList();
+            _logger.LogDebug("Generating headers from {Count} header attributes", attributesList?.Count);
 
             try
             {
-                if (attributesList.Count == 0)
+                if (attributesList?.Count == 0)
                 {
                     _logger.LogDebug("No header attributes provided, returning null headers");
                     return null;
@@ -69,10 +67,13 @@ namespace Zen.CanonicaLib.UI.Services
         }
 
         private IDictionary<string, IOpenApiHeader> GenerateHeaderDictionary(
-            List<ResponseHeaderAttribute> headerAttributes, 
+            List<ResponseHeaderAttribute>? headerAttributes, 
             GeneratorContext generatorContext)
         {
             var headers = new Dictionary<string, IOpenApiHeader>();
+            if (headerAttributes == null || headerAttributes.Count == 0)
+                return headers;
+
             var processedNames = new HashSet<string>();
 
             foreach (var headerAttribute in headerAttributes)
