@@ -1,5 +1,7 @@
-﻿using Microsoft.OpenApi;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.OpenApi;
 using Namotion.Reflection;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.OpenApiExtensions;
@@ -14,8 +16,12 @@ namespace Zen.CanonicaLib.UI.Services
     {
         public IOpenApiSchema? GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext)
         {
+
             if (schemaDefinition == null)
                 throw new ArgumentNullException(nameof(schemaDefinition));
+
+            if (schemaDefinition.GetInterfaces().Any(x => x.Name == "IExample`1" || x.Name == "ILibrary" || x.Name == "IService"))
+                throw new ArgumentException("Parameter can not implement IExample, ILibrary or IService", nameof(schemaDefinition));
 
             if (generatorContext == null)
                 throw new ArgumentNullException(nameof(generatorContext));
@@ -228,12 +234,21 @@ namespace Zen.CanonicaLib.UI.Services
 
         private static bool IsArrayOrCollection(Type type)
         {
-            return type.IsArray ||
-                   (type.IsGenericType &&
+            //TODO - this should also check base type recursively to see if it's an array
+            if (type.IsArray ||
+                  (type.IsGenericType &&
                     (type.GetGenericTypeDefinition() == typeof(List<>) ||
                      type.GetGenericTypeDefinition() == typeof(IList<>) ||
                      type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
-                     type.GetGenericTypeDefinition() == typeof(IEnumerable<>)));
+                     type.GetGenericTypeDefinition() == typeof(Collection<>) ||
+                     type.GetGenericTypeDefinition() == typeof(IEnumerable<>))))
+            {
+                return true;
+            } else if (type.BaseType != null)
+            {
+                return IsArrayOrCollection(type.BaseType);
+            }
+            return false;
         }
 
         private static Type? GetElementType(Type type)
@@ -243,9 +258,14 @@ namespace Zen.CanonicaLib.UI.Services
                 return type.GetElementType();
             }
 
-            if (type.IsGenericType)
+            if (type.GetGenericArguments().Length > 0)
             {
                 return type.GetGenericArguments().FirstOrDefault();
+            }
+
+            if (type.BaseType != null)
+            {
+                return GetElementType(type.BaseType);
             }
 
             return null;
