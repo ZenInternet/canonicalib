@@ -63,8 +63,12 @@ namespace Zen.CanonicaLib.UI.Services
         public IList<Type> FindSchemaDefinitions(Assembly assembly)
         {
             var schemaTypes = assembly.GetTypes()
-                .Where(type => type.IsClass || type.IsEnum || type.IsValueType)
-                .ToList();
+                .Where(
+                    type => (type.IsClass || type.IsEnum || type.IsValueType) && 
+                    !type.GetInterfaces().Any(x => x.Name == "IExample`1" || x.Name == "ILibrary" || x.Name == "IService") &&
+                    type.GetCustomAttribute<OpenApiWebhookAttribute>() == null &&
+                    type.GetCustomAttribute<OpenApiPathAttribute>() == null
+                ).ToList();
 
             var controllerDefinitions = FindControllerDefinitions(assembly);
             foreach (var controllerDefinition in controllerDefinitions)
