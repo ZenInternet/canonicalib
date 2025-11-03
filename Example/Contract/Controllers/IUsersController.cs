@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using Test.Contract.Examples;
 using Zen.CanonicaLib.DataAnnotations;
 
@@ -26,6 +27,7 @@ namespace Test.Contract.Controllers
         /// </remarks>
         [OpenApiEndpoint("", Methods.MethodGet)]
         [Response(typeof(GetUsersResponse), StatusCodes.Status200OK, "Successfully retrieved users")]
+        [Response(typeof(List<User>), StatusCodes.Status200OK, "Alternative response for retrieved users")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UsersResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
         [Response(StatusCodes.Status403Forbidden, "You do not have permission to access this resource")]

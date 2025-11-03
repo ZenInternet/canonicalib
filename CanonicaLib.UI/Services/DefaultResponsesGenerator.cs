@@ -35,26 +35,66 @@ namespace Zen.CanonicaLib.UI.Services
                 var headerAttributes = endpointHeaders.Where(x => x.StatusCode == attribute.StatusCode);
 
                 IDictionary<string, IOpenApiExample>? examples = exampleAttributes != null ? ExamplesGenerator.GenerateExamples(exampleAttributes) : null;
-                
-                IDictionary<string, IOpenApiHeader>? headers = headerAttributes != null ? HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext) : null;
-                
-                var schema = SchemaGenerator.GenerateSchema(responseType, generatorContext);
-                responses[statusCode] = new OpenApiResponse
-                {
-                    Description = description,
-                    Content = new Dictionary<string, OpenApiMediaType>
-                    {
-                        { "application/json", new OpenApiMediaType()
-                            {
-                                Schema = schema,
-                                Examples = examples,
-                            }
-                        }
-                    },
-                    Headers = headers,
-                };
-            }
 
+                IDictionary<string, IOpenApiHeader>? headers = headerAttributes != null ? HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext) : null;
+
+                var schema = SchemaGenerator.GenerateSchema(responseType, generatorContext);
+
+                if (!responses.ContainsKey(statusCode))
+                {
+                    responses[statusCode] = new OpenApiResponse
+                    {
+                        Description = description,
+                        Content = new Dictionary<string, OpenApiMediaType>(),
+                        Headers = new Dictionary<string, IOpenApiHeader>(),
+                    };
+                }
+
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        if (!responses[statusCode]!.Headers!.ContainsKey(header.Key))
+                        {
+                            responses[statusCode]!.Headers!.Add(header.Key, header.Value);
+                        }
+                    }
+                }
+
+                if (!responses[statusCode]!.Content!.ContainsKey("application/json"))
+                {
+                    responses[statusCode]!.Content!["application/json"] = new OpenApiMediaType
+                    {
+                        Schema = schema,
+                        Examples = examples,
+                    };
+                    continue;
+                }
+
+                if (responses[statusCode]!.Content!["application/json"].Schema!.OneOf == null)
+                {
+                    var existingSchema = responses[statusCode]!.Content!["application/json"].Schema;
+                    responses[statusCode]!.Content!["application/json"].Schema = new OpenApiSchema
+                    {
+                        OneOf = new List<IOpenApiSchema> { existingSchema!, schema! }
+                    };
+                }
+                else
+                {
+                    responses[statusCode]!.Content!["application/json"].Schema!.OneOf!.Add(schema!);
+                }
+
+                if (examples != null)
+                {
+                    foreach (var example in examples)
+                    {
+                        if (!responses[statusCode]!.Content!["application/json"].Examples!.ContainsKey(example.Key))
+                        {
+                            responses[statusCode]!.Content!["application/json"].Examples!.Add(example.Key, example.Value);
+                        }
+                    }
+                }
+            }
             return responses;
         }
     }
