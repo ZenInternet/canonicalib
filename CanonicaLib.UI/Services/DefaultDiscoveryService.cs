@@ -62,10 +62,27 @@ namespace Zen.CanonicaLib.UI.Services
 
         public IList<Type> FindSchemaDefinitions(Assembly assembly)
         {
+            var excludedInterfaces = new HashSet<string>
+            {
+                "IExample`1",
+                "ILibrary",
+                "IService"
+            };
+
+            var excludedTypes = new HashSet<string>
+            {
+                "Void",
+                "Object",
+                "EmbeddedAttribute",
+                "NullableAttribute",
+                "NullableContextAttribute"
+            };
+
             var schemaTypes = assembly.GetTypes()
                 .Where(
                     type => (type.IsClass || type.IsEnum || type.IsValueType) && 
-                    !type.GetInterfaces().Any(x => x.Name == "IExample`1" || x.Name == "ILibrary" || x.Name == "IService") &&
+                    !type.GetInterfaces().Any(x => excludedInterfaces.Contains(x.Name)) &&
+                    !excludedTypes.Contains(type.Name) &&
                     type.GetCustomAttribute<OpenApiWebhookAttribute>() == null &&
                     type.GetCustomAttribute<OpenApiPathAttribute>() == null
                 ).ToList();
