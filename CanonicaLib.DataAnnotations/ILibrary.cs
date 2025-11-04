@@ -41,5 +41,7 @@ namespace Zen.CanonicaLib.DataAnnotations
         /// </code>
         /// </example>
         IList<OpenApiTagGroup>? TagGroups { get; }
+
+        OpenApiLicense? License { get; }
     }
 }
