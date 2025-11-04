@@ -11,19 +11,23 @@ namespace Zen.CanonicaLib.UI.Services
     public sealed class DefaultComponentsGenerator : IComponentsGenerator
     {
         private readonly ISchemasGenerator _schemasGenerator;
+        private readonly ISecurityGenerator _securityGenerator;
         private readonly ILogger<DefaultComponentsGenerator> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultComponentsGenerator"/> class.
         /// </summary>
         /// <param name="schemasGenerator">The generator for OpenAPI schemas.</param>
+        /// <param name="securityGenerator">The generator for OpenAPI security schemes.</param>
         /// <param name="logger">The logger for diagnostic information.</param>
         /// <exception cref="ArgumentNullException">Thrown when any required parameter is null.</exception>
         public DefaultComponentsGenerator(
             ISchemasGenerator schemasGenerator,
+            ISecurityGenerator securityGenerator,
             ILogger<DefaultComponentsGenerator> logger)
         {
             _schemasGenerator = schemasGenerator ?? throw new ArgumentNullException(nameof(schemasGenerator));
+            _securityGenerator = securityGenerator ?? throw new ArgumentNullException(nameof(securityGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -44,7 +48,8 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 return new OpenApiComponents()
                 {
-                    Schemas = _schemasGenerator.GenerateSchemas(generatorContext)
+                    Schemas = _schemasGenerator.GenerateSchemas(generatorContext),
+                    SecuritySchemes = _securityGenerator.GenerateSecuritySchemes(generatorContext)
                 };
             }
             catch (Exception ex)

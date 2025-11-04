@@ -17,6 +17,7 @@ namespace Zen.CanonicaLib.UI.Services.Interfaces
         IList<Type> FindSchemaDefinitions(Assembly assembly);
         public ILibrary GetLibraryInstance(Assembly assembly);
         public IService? GetServiceInstance(Assembly assembly);
+        public ISecureService? GetSecureServiceInstance(Assembly assembly);
         public bool HasIndexDocument(Assembly assembly);
         public IList<string> GetDocumentList(Assembly assembly);
         public string GetDocumentContent(Assembly assembly, string documentName);

@@ -162,6 +162,24 @@ namespace Zen.CanonicaLib.UI.Services
             return serviceInstance;
         }
 
+        public ISecureService? GetSecureServiceInstance(Assembly assembly)
+        {
+            var services = assembly.GetTypes()
+                .Where(t => typeof(ISecureService).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            if (services == null || services.Count() == 0)
+                return null;
+
+            if (services.Count() > 1)
+                throw new InvalidOperationException("Multiple implementations of ISecureService found in the target assembly.");
+
+            var service = services.First();
+
+            ISecureService serviceInstance = (ISecureService)Activator.CreateInstance(service)!;
+
+            return serviceInstance;
+        }
+
         public IList<string> GetDocumentList(Assembly assembly)
         {
             // search embedded resources for markdown documents
