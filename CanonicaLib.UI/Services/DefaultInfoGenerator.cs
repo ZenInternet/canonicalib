@@ -18,6 +18,7 @@ namespace Zen.CanonicaLib.UI.Services
             var assembly = generatorContext.Assembly;
             var library = DiscoveryService.GetLibraryInstance(assembly);
             var description = assembly.GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description ?? "";
+
             if (DiscoveryService.HasIndexDocument(assembly))
             {
                 description += "\n\n" + DiscoveryService.GetDocumentContent(assembly, "Index.md");
@@ -28,6 +29,11 @@ namespace Zen.CanonicaLib.UI.Services
                 Title = library.FriendlyName,
                 Version = assembly.GetName().Version?.ToString() ?? "0.0.0.0",
                 Description = description,
+                License = library.License ?? new OpenApiLicense
+                {
+                    Name = "Unknown",
+                    Url = new Uri("urn:unknown")
+                },
             };
         }
     }
