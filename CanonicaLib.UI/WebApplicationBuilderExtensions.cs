@@ -47,7 +47,6 @@ namespace Zen.CanonicaLib.UI
 
         private static IServiceCollection AddGenerators(this IServiceCollection services)
         {
-            services.AddTransient<IComponentsGenerator, DefaultComponentsGenerator>();
             services.AddTransient<IDocumentGenerator, DefaultDocumentGenerator>();
             services.AddTransient<IExamplesGenerator, DefaultExamplesGenerator>();
             services.AddTransient<IHeadersGenerator, DefaultHeadersGenerator>();
@@ -60,7 +59,6 @@ namespace Zen.CanonicaLib.UI
             services.AddTransient<ISecurityGenerator, DefaultSecurityGenerator>();
             services.AddTransient<IServersGenerator, DefaultServersGenerator>();
             services.AddTransient<ISchemaGenerator, DefaultSchemaGenerator>();
-            services.AddTransient<ISchemasGenerator, DefaultSchemasGenerator>();
             services.AddTransient<ITagGroupsGenerator, DefaultTagGroupsGenerator>();
             services.AddTransient<IWebhooksGenerator, DefaultWebhooksGenerator>();
 

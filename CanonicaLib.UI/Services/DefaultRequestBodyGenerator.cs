@@ -114,15 +114,14 @@ namespace Zen.CanonicaLib.UI.Services
             var parameterType = requestBodyParameter.ParameterType;
             var schemaKey = parameterType.FullName ?? parameterType.Name;
 
-            if (generatorContext.Schemas.ContainsKey(schemaKey))
+            if (generatorContext.Document.Components!.Schemas!.ContainsKey(schemaKey))
             {
                 _logger.LogDebug("Using existing schema reference for type: {TypeName}", parameterType.FullName);
                 return new OpenApiSchemaReference(schemaKey);
             }
 
-            _logger.LogDebug("Generating new schema for type: {TypeName}", parameterType.FullName);
             var schema = _schemaGenerator.GenerateSchema(parameterType, generatorContext);
-            
+
             return schema ?? new OpenApiSchema { Type = JsonSchemaType.Object };
         }
 

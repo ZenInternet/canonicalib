@@ -60,16 +60,14 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
                 .ToList();
 
-        public IList<Type> FindSchemaDefinitions(Assembly assembly)
-        {
-            var excludedInterfaces = new HashSet<string>
+        private readonly HashSet<string> excludedInterfaces = new HashSet<string>
             {
                 "IExample`1",
                 "ILibrary",
                 "IService"
             };
 
-            var excludedTypes = new HashSet<string>
+        private readonly HashSet<string> excludedTypes = new HashSet<string>
             {
                 "Void",
                 "Object",
@@ -78,9 +76,11 @@ namespace Zen.CanonicaLib.UI.Services
                 "NullableContextAttribute"
             };
 
+        public IList<Type> FindSchemaDefinitions(Assembly assembly)
+        {
             var schemaTypes = assembly.GetTypes()
                 .Where(
-                    type => (type.IsClass || type.IsEnum || type.IsValueType) && 
+                    type => (type.IsClass || type.IsEnum || type.IsValueType) &&
                     !type.GetInterfaces().Any(x => excludedInterfaces.Contains(x.Name)) &&
                     !excludedTypes.Contains(type.Name) &&
                     type.GetCustomAttribute<OpenApiWebhookAttribute>() == null &&
@@ -106,6 +106,23 @@ namespace Zen.CanonicaLib.UI.Services
             }
 
             return schemaTypes;
+        }
+
+        public AssemblyReferenceType GetAssemblyReferenceType(Assembly assembly, Type type)
+        {
+            // If the type is directly defined inside the assembly, return true, UNLESS it implements one of the excluded interfaces or is one of the excluded types, in which case return null
+            if (type.Assembly == assembly)
+            {
+                if (excludedInterfaces.Any(i => type.GetInterfaces().Any(ti => ti.Name == i)) ||
+                    excludedTypes.Contains(type.Name) ||
+                    type.GetCustomAttribute<OpenApiWebhookAttribute>() != null ||
+                    type.GetCustomAttribute<OpenApiPathAttribute>() != null)
+                {
+                    return AssemblyReferenceType.Excluded;
+                }
+                return AssemblyReferenceType.Internal;
+            }
+            return AssemblyReferenceType.External;
         }
 
         public ISet<OpenApiTag> FindControllerTags(Assembly assembly)

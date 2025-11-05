@@ -4,17 +4,25 @@ using Zen.CanonicaLib.DataAnnotations;
 
 namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
+    public enum AssemblyReferenceType
+    {
+        Excluded,
+        External,
+        Internal,
+    }
+
     public interface IDiscoveryService
     {
-        List<Assembly> GetAllAssemblies();
-        List<Assembly> FindCanonicalAssemblies();
-        Assembly? FindCanonicalAssembly(string assemblyName);
-        IList<Type> FindControllerDefinitions(Assembly assembly);
-        IList<Type> FindWebhookDefinitions(Assembly assembly);
+        public List<Assembly> GetAllAssemblies();
+        public List<Assembly> FindCanonicalAssemblies();
+        public Assembly? FindCanonicalAssembly(string assemblyName);
+        public IList<Type> FindControllerDefinitions(Assembly assembly);
+        public IList<Type> FindWebhookDefinitions(Assembly assembly);
         public ISet<OpenApiTag> FindControllerTags(Assembly assembly);
         public ISet<OpenApiTag> FindWebhookTags(Assembly assembly);
-        IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition);
-        IList<Type> FindSchemaDefinitions(Assembly assembly);
+        public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition);
+        public IList<Type> FindSchemaDefinitions(Assembly assembly);
+        public AssemblyReferenceType GetAssemblyReferenceType(Assembly assembly, Type type);
         public ILibrary GetLibraryInstance(Assembly assembly);
         public IService? GetServiceInstance(Assembly assembly);
         public ISecureService? GetSecureServiceInstance(Assembly assembly);

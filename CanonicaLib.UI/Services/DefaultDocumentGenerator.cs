@@ -13,7 +13,7 @@ namespace Zen.CanonicaLib.UI.Services
     {
         private readonly IInfoGenerator _infoGenerator;
         private readonly IPathsGenerator _pathsGenerator;
-        private readonly IComponentsGenerator _componentsGenerator;
+        private readonly ISecurityGenerator _securityGenerator;
         private readonly ITagGroupsGenerator _tagGroupsGenerator;
         private readonly IWebhooksGenerator _webhooksGenerator;
         private readonly IServersGenerator _serversGenerator;
@@ -25,7 +25,7 @@ namespace Zen.CanonicaLib.UI.Services
         /// <param name="infoGenerator">Generator for OpenAPI info section.</param>
         /// <param name="serversGenerator">Generator for OpenAPI servers section.</param>
         /// <param name="pathsGenerator">Generator for OpenAPI paths section.</param>
-        /// <param name="componentsGenerator">Generator for OpenAPI components section.</param>
+        /// <param name="securityGenerator">Generator for OpenAPI security section.</param>
         /// <param name="tagGroupsGenerator">Generator for OpenAPI tag groups extension.</param>
         /// <param name="webhooksGenerator">Generator for OpenAPI webhooks section.</param>
         /// <param name="logger">Logger for diagnostic information.</param>
@@ -34,7 +34,7 @@ namespace Zen.CanonicaLib.UI.Services
             IInfoGenerator infoGenerator,
             IServersGenerator serversGenerator,
             IPathsGenerator pathsGenerator,
-            IComponentsGenerator componentsGenerator,
+            ISecurityGenerator securityGenerator,
             ITagGroupsGenerator tagGroupsGenerator,
             IWebhooksGenerator webhooksGenerator,
             ILogger<DefaultDocumentGenerator> logger)
@@ -42,7 +42,7 @@ namespace Zen.CanonicaLib.UI.Services
             _infoGenerator = infoGenerator ?? throw new ArgumentNullException(nameof(infoGenerator));
             _serversGenerator = serversGenerator ?? throw new ArgumentNullException(nameof(serversGenerator));
             _pathsGenerator = pathsGenerator ?? throw new ArgumentNullException(nameof(pathsGenerator));
-            _componentsGenerator = componentsGenerator ?? throw new ArgumentNullException(nameof(componentsGenerator));
+            _securityGenerator = securityGenerator ?? throw new ArgumentNullException(nameof(securityGenerator));
             _tagGroupsGenerator = tagGroupsGenerator ?? throw new ArgumentNullException(nameof(tagGroupsGenerator));
             _webhooksGenerator = webhooksGenerator ?? throw new ArgumentNullException(nameof(webhooksGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -55,7 +55,7 @@ namespace Zen.CanonicaLib.UI.Services
         /// <returns>A complete OpenAPI document.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="assembly"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Thrown when document generation fails.</exception>
-        public OpenApiDocument GenerateDocument(Assembly assembly)
+        public GeneratorContext GenerateDocument(Assembly assembly)
         {
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
@@ -66,35 +66,32 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 var generatorContext = new GeneratorContext(assembly);
 
-                var document = new OpenApiDocument();
-                document.Extensions ??= new Dictionary<string, IOpenApiExtension>();
-
                 // Generate document sections in the correct order
                 _logger.LogDebug("Generating info section");
-                document.Info = _infoGenerator.GenerateInfo(generatorContext);
+                generatorContext.Document.Info = _infoGenerator.GenerateInfo(generatorContext);
 
                 _logger.LogDebug("Generating servers section");
-                document.Servers = _serversGenerator.GenerateServers(generatorContext);
+                generatorContext.Document.Servers = _serversGenerator.GenerateServers(generatorContext);
 
-                _logger.LogDebug("Generating components section");
-                document.Components = _componentsGenerator.GenerateComponents(generatorContext);
+                generatorContext.Document.Components!.SecuritySchemes = _securityGenerator.GenerateSecuritySchemes(generatorContext);
 
                 _logger.LogDebug("Generating tag groups");
-                document.Tags = _tagGroupsGenerator.GenerateTags(generatorContext);
+                generatorContext.Document.Tags = _tagGroupsGenerator.GenerateTags(generatorContext);
                 var tagGroups = _tagGroupsGenerator.GenerateTagGroups(generatorContext);
                 if (tagGroups != null)
                 {
-                    document.Extensions!.Add("x-tagGroups", tagGroups);
+                    generatorContext.Document.Extensions!.Add("x-tagGroups", tagGroups);
                 }
 
                 _logger.LogDebug("Generating paths section");
-                document.Paths = _pathsGenerator.GeneratePaths(generatorContext);
+                generatorContext.Document.Paths = _pathsGenerator.GeneratePaths(generatorContext);
 
                 _logger.LogDebug("Generating webhooks section");
-                document.Webhooks = _webhooksGenerator.GenerateWebhooks(generatorContext);
+                generatorContext.Document.Webhooks = _webhooksGenerator.GenerateWebhooks(generatorContext);
 
                 _logger.LogInformation("Successfully generated OpenAPI document for assembly: {AssemblyName}", assembly.FullName);
-                return document;
+
+                return generatorContext;
             }
             catch (Exception ex)
             {

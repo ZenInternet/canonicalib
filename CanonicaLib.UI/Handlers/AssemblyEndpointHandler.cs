@@ -30,14 +30,14 @@ namespace Zen.CanonicaLib.UI.Handlers
 
             var documentGeneratorService = context.RequestServices.GetRequiredService<IDocumentGenerator>();
 
-            var document = documentGeneratorService.GenerateDocument(assembly);
+            var generatorContext = documentGeneratorService.GenerateDocument(assembly);
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = 200;
 
             using var stringWriter = new StringWriter();
             var jsonWriter = new OpenApiJsonWriter(stringWriter);
-            document.SerializeAsV31(jsonWriter);
+            generatorContext.Document.SerializeAsV31(jsonWriter);
             var json = stringWriter.ToString();
 
             await context.Response.WriteAsync(json);
