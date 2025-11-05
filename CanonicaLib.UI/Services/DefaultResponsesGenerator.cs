@@ -1,4 +1,5 @@
-﻿using Microsoft.OpenApi;
+﻿using Microsoft.AspNetCore.Mvc.TagHelpers;
+using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Services.Interfaces;
@@ -38,10 +39,11 @@ namespace Zen.CanonicaLib.UI.Services
 
                 IDictionary<string, IOpenApiHeader>? headers = headerAttributes != null ? HeadersGenerator.GenerateHeaders(headerAttributes, generatorContext) : null;
 
-                if (responseType.FullName == "Systme.Void")
-                    continue;
 
-                var schema = SchemaGenerator.GenerateSchema(responseType, generatorContext);
+                var schema = 
+                    responseType.FullName == "System.Void" ?
+                    null : 
+                    SchemaGenerator.GenerateSchema(responseType, generatorContext);
 
                 if (!responses.ContainsKey(statusCode))
                 {
@@ -98,6 +100,7 @@ namespace Zen.CanonicaLib.UI.Services
                     }
                 }
             }
+
             return responses;
         }
     }
