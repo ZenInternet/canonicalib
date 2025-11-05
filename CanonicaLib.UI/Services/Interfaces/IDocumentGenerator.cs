@@ -5,6 +5,6 @@ namespace Zen.CanonicaLib.UI.Services.Interfaces
 {
     public interface IDocumentGenerator
     {
-        OpenApiDocument GenerateDocument(Assembly assembly);
+        GeneratorContext GenerateDocument(Assembly assembly);
     }
 }

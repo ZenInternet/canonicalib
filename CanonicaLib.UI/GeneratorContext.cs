@@ -1,5 +1,6 @@
 ﻿using Microsoft.OpenApi;
 using System.Reflection;
+using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI
 {
@@ -19,15 +20,7 @@ namespace Zen.CanonicaLib.UI
         /// <value>The target assembly containing the types to document.</value>
         public Assembly Assembly { get; init; }
 
-        /// <summary>
-        /// Gets the collection of schemas discovered during generation.
-        /// </summary>
-        /// <value>A dictionary mapping schema names to their OpenAPI schema definitions.</value>
-        /// <remarks>
-        /// This collection is populated by schema generators and can be referenced
-        /// by other generators to avoid duplication and ensure consistency.
-        /// </remarks>
-        public IDictionary<string, IOpenApiSchema> Schemas { get; } = new Dictionary<string, IOpenApiSchema>();
+        public OpenApiDocument Document { get; init; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GeneratorContext"/> class.
@@ -37,6 +30,35 @@ namespace Zen.CanonicaLib.UI
         public GeneratorContext(Assembly assembly)
         {
             Assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
+            var document = new OpenApiDocument();
+            document.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+            document.Components ??= new OpenApiComponents() ;
+            document.Components.Schemas ??= new Dictionary<string, IOpenApiSchema>();
+            Document = document;
+        }
+
+        public bool AddSchema(Type type, IOpenApiSchema schema, AssemblyReferenceType referenceType)
+        {
+            var schemaKey = type.FullName ?? type.Name;
+            if (referenceType == AssemblyReferenceType.Internal || referenceType == AssemblyReferenceType.External)
+            {
+                if (Document.Components!.Schemas!.ContainsKey(schemaKey))
+                {
+                    return true;
+                }
+                
+                Document.Components!.Schemas![schemaKey] = schema;
+                return true;
+            }
+            return false;
+        }
+
+        public IOpenApiSchema? GetExistingSchema(Type type)
+        {
+            var schemaKey = type.FullName ?? type.Name;
+            if (Document.Components!.Schemas!.ContainsKey(schemaKey))
+                return new OpenApiSchemaReference(schemaKey);
+            return null;
         }
     }
 }

@@ -14,6 +14,13 @@ namespace Zen.CanonicaLib.UI.Services
     /// </summary>
     public class DefaultSchemaGenerator : ISchemaGenerator
     {
+        private readonly IDiscoveryService _discoveryService;
+
+        public DefaultSchemaGenerator(IDiscoveryService discoveryService)
+        {
+            _discoveryService = discoveryService ?? throw new ArgumentNullException(nameof(discoveryService));
+        }
+
         public IOpenApiSchema? GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext)
         {
 
@@ -26,22 +33,12 @@ namespace Zen.CanonicaLib.UI.Services
             if (generatorContext == null)
                 throw new ArgumentNullException(nameof(generatorContext));
 
-            var schemaKey = GetSchemaKey(schemaDefinition);
-
             try
             {
                 // Generate the OpenAPI schema using reflection
-                var typeName = schemaDefinition.Name;
-
-                var openApiSchema = CreateSchemaFromType(schemaDefinition, generatorContext.Schemas, generatorContext.Assembly);
-
-                if (generatorContext.Schemas.ContainsKey(schemaKey))
-                {
-                    // Update the placeholder in the schemas dictionary
-                    generatorContext.Schemas[schemaKey] = openApiSchema;
-                }
-
-                return openApiSchema;
+                var referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, schemaDefinition);
+                var schema = CreateSchemaFromType(schemaDefinition, referenceType, generatorContext);
+                return schema;
             }
             catch (Exception ex)
             {
@@ -54,8 +51,12 @@ namespace Zen.CanonicaLib.UI.Services
             return type.FullName ?? type.Name;
         }
 
-        private OpenApiSchema CreateSchemaFromType(Type type, IDictionary<string, IOpenApiSchema> existingSchemas, Assembly targetAssembly)
+        private IOpenApiSchema CreateSchemaFromType(Type type, AssemblyReferenceType referenceType, GeneratorContext generatorContext)
         {
+            var existingRef = generatorContext.GetExistingSchema(type);
+            if (existingRef != null)
+                return existingRef;
+
             var schema = new OpenApiSchema();
 
             var tagAttribute = type.GetCustomAttribute<OpenApiTagAttribute>();
@@ -71,12 +72,20 @@ namespace Zen.CanonicaLib.UI.Services
             if (IsNullableType(type))
             {
                 type = Nullable.GetUnderlyingType(type) ?? type;
+                referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, type);
             }
 
             // Handle primitive types
             if (IsPrimitiveType(type))
             {
                 SetPrimitiveTypeProperties(schema, type);
+                return schema;
+            }
+
+            //Handle Object Types
+            if (IsObjectType(type))
+            {
+                schema.Type = JsonSchemaType.Object;
                 return schema;
             }
 
@@ -87,7 +96,8 @@ namespace Zen.CanonicaLib.UI.Services
                 var elementType = GetElementType(type);
                 if (elementType != null)
                 {
-                    schema.Items = CreateSchemaOrReference(elementType, existingSchemas, targetAssembly);
+                    schema.Items = CreateSchemaFromType(elementType, referenceType, generatorContext);
+
                 }
                 return schema;
             }
@@ -109,6 +119,11 @@ namespace Zen.CanonicaLib.UI.Services
                         schema.Enum.Add(System.Text.Json.Nodes.JsonValue.Create(enumString));
                     }
                 }
+                if (generatorContext.AddSchema(type, schema, referenceType))
+                {
+                    var schemaKey = GetSchemaKey(type);
+                    return new OpenApiSchemaReference(schemaKey);
+                }
                 return schema;
             }
 
@@ -127,7 +142,9 @@ namespace Zen.CanonicaLib.UI.Services
                 if (property.CanRead && property.GetGetMethod()?.IsPublic == true)
                 {
                     var propertyName = GetPropertyName(property);
-                    schema.Properties[propertyName] = CreateSchemaOrReference(property.PropertyType, existingSchemas, targetAssembly);
+
+                    var propertyReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, property.PropertyType);
+                    schema.Properties[propertyName] = CreateSchemaFromType(property.PropertyType, propertyReferenceType, generatorContext);
 
                     // Check if property is required (not nullable and no default value)
                     if (IsRequiredProperty(property))
@@ -142,44 +159,56 @@ namespace Zen.CanonicaLib.UI.Services
                 schema.Required = requiredProperties;
             }
 
+            if (generatorContext.AddSchema(type, schema, referenceType))
+            {
+                var schemaKey = GetSchemaKey(type);
+                return new OpenApiSchemaReference(schemaKey);
+            }
+
+
             return schema;
         }
 
-        private IOpenApiSchema CreateSchemaOrReference(Type type, IDictionary<string, IOpenApiSchema> existingSchemas, Assembly targetAssembly)
+        //private IOpenApiSchema CreateSchemaOrReference(Type type, AssemblyReferenceType referenceType, GeneratorContext generatorContext)
+        //{
+        //    // Handle nullable types
+        //    if (IsNullableType(type))
+        //    {
+        //        type = Nullable.GetUnderlyingType(type) ?? type;
+        //        referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, type);
+        //    }
+
+        //    // For primitive types, create schema directly
+        //    if (IsPrimitiveType(type))
+        //    {
+        //        var primitiveSchema =  CreateSchemaFromType(type, referenceType, generatorContext);
+        //    }
+
+        //    // If it's not in our existing schemas but is in the target assembly, create schema directly
+        //    var schema = CreateSchemaFromType(type, referenceType, generatorContext);
+        //    generatorContext.AddSchema(type, schema, referenceType);
+
+        //    if (referenceType == AssemblyReferenceType.External || referenceType == AssemblyReferenceType.Internal)
+        //    {
+        //        var typeKey = GetSchemaKey(type);
+        //        return new OpenApiSchemaReference(typeKey);
+        //    }
+
+        //    return schema;
+        //}
+
+        private static bool IsObjectType(Type type)
         {
-            // Handle nullable types
-            if (IsNullableType(type))
+            var objectTypes = new[]
             {
-                type = Nullable.GetUnderlyingType(type) ?? type;
-            }
+                "IDictionary`1",
+                "IDictionary`2"
+            };
 
-            // For primitive types, create schema directly
-            if (IsPrimitiveType(type))
-            {
-                return CreateSchemaFromType(type, existingSchemas, targetAssembly);
-            }
+            if (objectTypes.Contains(type.Name))
+                return true;
 
-
-            // For complex types, check if the type belongs to the target assembly
-            if (type.Assembly != targetAssembly)
-            {
-                // For types not in the target assembly, create a simple object schema
-                return new OpenApiSchema
-                {
-                    Type = JsonSchemaType.Object,
-                    AdditionalPropertiesAllowed = true
-                };
-            }
-
-            // For complex types in the target assembly, check if we should create a reference
-            var typeKey = GetSchemaKey(type);
-            if (existingSchemas.ContainsKey(typeKey))
-            {
-                return new OpenApiSchemaReference(typeKey);
-            }
-
-            // If it's not in our existing schemas but is in the target assembly, create schema directly
-            return CreateSchemaFromType(type, existingSchemas, targetAssembly);
+            return false;
         }
 
         private static bool IsNullableType(Type type)
