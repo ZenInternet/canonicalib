@@ -13,7 +13,7 @@ namespace Test.Contract.Examples
         {
             Users = new List<User>()
             {
-                new User() { Id = Guid.NewGuid(), FirstName = "Ben", LastName = "Wolstencroft" },
+                new User() { Id = Guid.NewGuid(), FirstName = "Ben" },
                 new User() { Id = Guid.NewGuid(), FirstName = "Julian", LastName = "Monono" }
             },
             Count = 2
