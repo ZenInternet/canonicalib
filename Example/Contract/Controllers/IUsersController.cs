@@ -26,6 +26,7 @@ namespace Test.Contract.Controllers
         /// Gets a list of users
         /// </remarks>
         [OpenApiEndpoint("", Methods.MethodGet)]
+        [OpenApiSecurity("oauth2", new[] { "user-management" })]
         [Response(typeof(GetUsersResponse), StatusCodes.Status200OK, "Successfully retrieved users")]
         [Response(typeof(List<User>), StatusCodes.Status200OK, "Alternative response for retrieved users")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UsersResponseExample))]
@@ -36,6 +37,7 @@ namespace Test.Contract.Controllers
 
 
         [OpenApiEndpoint("{userId}", Methods.MethodGet)]
+        [OpenApiSecurity("oauth2", new[] { "user-management" })]
         [Response(typeof(User), StatusCodes.Status200OK, "Successfully retrieved user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(StatusCodes.Status401Unauthorized, "You must be authenticated to access this resource")]
@@ -44,6 +46,7 @@ namespace Test.Contract.Controllers
         public IActionResult GetUser([FromRequestPath] Guid userId);
 
         [OpenApiEndpoint("", Methods.MethodPost)]
+        [OpenApiSecurity("oauth2", new[] { "user-management" })]
         [Response(typeof(User), StatusCodes.Status200OK, "Successfully created user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "Invalid request")]
@@ -52,6 +55,7 @@ namespace Test.Contract.Controllers
         public IActionResult CreateUser([FromRequestBody] User user);
 
         [OpenApiEndpoint("{userId}", Methods.MethodPut)]
+        [OpenApiSecurity("oauth2", new[] { "user-management" })]
         [Response(typeof(User), StatusCodes.Status200OK, "Successfully updated user")]
         [ResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
         [Response(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "Invalid request")]

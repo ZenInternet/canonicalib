@@ -12,15 +12,18 @@ namespace Zen.CanonicaLib.UI.Services
         private readonly IRequestBodyGenerator RequestBodyGenerator;
         private readonly IParametersGenerator ParametersGenerator;
         private readonly IResponsesGenerator ResponsesGenerator;
+        private readonly ISecurityGenerator SecurityGenerator;
 
         public DefaultOperationGenerator(
             IRequestBodyGenerator requestBodyGenerator,
             IParametersGenerator parametersGenerator,
-            IResponsesGenerator responsesGenerator)
+            IResponsesGenerator responsesGenerator,
+            ISecurityGenerator securityGenerator)
         {
             RequestBodyGenerator = requestBodyGenerator;
             ParametersGenerator = parametersGenerator;
             ResponsesGenerator = responsesGenerator;
+            SecurityGenerator = securityGenerator;
         }
 
         public OpenApiOperation GenerateOperation(MethodInfo endpointDefinition, GeneratorContext generatorContext)
@@ -40,7 +43,8 @@ namespace Zen.CanonicaLib.UI.Services
                 Description = endpointDefinition.GetXmlDocsRemarks().IfEmpty(null),
                 RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
                 Parameters = ParametersGenerator.GenerateParameters(endpointDefinition, generatorContext),
-                Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext)
+                Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext),
+                Security = SecurityGenerator.GenerateOperationSecurityRequirements(endpointDefinition)
             };
 
             return operation;
