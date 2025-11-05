@@ -61,4 +61,8 @@
 		<EmbeddedResource Include="Views\**\*.cshtml" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\CanonicaLib.DataAnnotations\CanonicaLib.DataAnnotations.csproj" />
+	</ItemGroup>
+
 </Project>
