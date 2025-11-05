@@ -12,7 +12,7 @@ namespace Zen.CanonicaLib.UI.Services
             DiscoveryService = discoveryService;
         }
 
-        public IList<OpenApiServer>? GenerateServers(GeneratorContext generatorContext)
+        public IList<OpenApiServer> GenerateServers(GeneratorContext generatorContext)
         {
             var service = DiscoveryService.GetServiceInstance(generatorContext.Assembly);
 
@@ -21,7 +21,7 @@ namespace Zen.CanonicaLib.UI.Services
                 return service.Servers;
             }
 
-            return null;
+            return new List<OpenApiServer>();
         }
     }
 }
