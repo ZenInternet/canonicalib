@@ -140,32 +140,8 @@ namespace Zen.CanonicaLib.UI.Extensions
 
                     var propertyType = property.PropertyType;
 
-                    // Handle enumerable properties (collections, arrays, lists, etc.)
-                    if (IsEnumerableType(propertyType) && !IsPrimitiveType(propertyType))
-                    {
-                        if (propertyValue is IEnumerable enumerable)
-                        {
-                            int index = 0;
-                            foreach (var item in enumerable)
-                            {
-                                if (item != null)
-                                {
-                                    var itemValidationContext = new ValidationContext(item, serviceProvider, validationContext.Items)
-                                    {
-                                        MemberName = $"{property.Name}[{index}]"
-                                    };
-
-                                    if (!ValidateObjectRecursively(item, itemValidationContext, validationResults, validatedObjects, serviceProvider))
-                                    {
-                                        isValid = false;
-                                    }
-                                }
-                                index++;
-                            }
-                        }
-                    }
                     // Handle complex object properties
-                    else if (!IsPrimitiveType(propertyType))
+                     if (!IsPrimitiveType(propertyType))
                     {
                         var propertyValidationContext = new ValidationContext(propertyValue, serviceProvider, validationContext.Items)
                         {
