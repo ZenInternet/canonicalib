@@ -73,7 +73,7 @@ namespace Zen.CanonicaLib.UI.Services
                 "Object",
                 "EmbeddedAttribute",
                 "NullableAttribute",
-                "NullableContextAttribute"
+                "NullableContextAttribute",
             };
 
         public IList<Type> FindSchemaDefinitions(Assembly assembly)
@@ -84,7 +84,8 @@ namespace Zen.CanonicaLib.UI.Services
                     !type.GetInterfaces().Any(x => excludedInterfaces.Contains(x.Name)) &&
                     !excludedTypes.Contains(type.Name) &&
                     type.GetCustomAttribute<OpenApiWebhookAttribute>() == null &&
-                    type.GetCustomAttribute<OpenApiPathAttribute>() == null
+                    type.GetCustomAttribute<OpenApiPathAttribute>() == null &&
+                    type.GetCustomAttribute<OpenApiExcludedTypeAttribute>() == null
                 ).ToList();
 
             return schemaTypes;
@@ -98,7 +99,8 @@ namespace Zen.CanonicaLib.UI.Services
                 if (excludedInterfaces.Any(i => type.GetInterfaces().Any(ti => ti.Name == i)) ||
                     excludedTypes.Contains(type.Name) ||
                     type.GetCustomAttribute<OpenApiWebhookAttribute>() != null ||
-                    type.GetCustomAttribute<OpenApiPathAttribute>() != null)
+                    type.GetCustomAttribute<OpenApiPathAttribute>() != null ||
+                    type.GetCustomAttribute<OpenApiExcludedTypeAttribute>() != null)
                 {
                     return AssemblyReferenceType.Excluded;
                 }
