@@ -74,6 +74,8 @@ namespace Zen.CanonicaLib.UI.Services
                 _logger.LogDebug("Generating info section");
                 generatorContext.Document.Info = _infoGenerator.GenerateInfo(generatorContext);
 
+                _schemasGenerator.GenerateSchemas(generatorContext);
+
                 _logger.LogDebug("Generating servers section");
                 _schemasGenerator.GenerateSchemas(generatorContext);
                 generatorContext.Document.Servers = _serversGenerator.GenerateServers(generatorContext);

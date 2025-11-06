@@ -87,24 +87,6 @@ namespace Zen.CanonicaLib.UI.Services
                     type.GetCustomAttribute<OpenApiPathAttribute>() == null
                 ).ToList();
 
-            var controllerDefinitions = FindControllerDefinitions(assembly);
-            foreach (var controllerDefinition in controllerDefinitions)
-            {
-                var endpointDefinitions = FindEndpointDefinitions(controllerDefinition);
-                foreach (var endpointDefinition in endpointDefinitions)
-                {
-                    var responseAttributes = endpointDefinition.GetCustomAttributes<ResponseAttribute>();
-                    foreach (var responseAttribute in responseAttributes)
-                    {
-                        var schemaType = responseAttribute.Type;
-                        if (schemaType != null && !schemaTypes.Contains(schemaType))
-                        {
-                            schemaTypes.Add(schemaType);
-                        }
-                    }
-                }
-            }
-
             return schemaTypes;
         }
 
