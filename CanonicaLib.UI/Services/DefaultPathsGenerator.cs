@@ -137,7 +137,7 @@ namespace Zen.CanonicaLib.UI.Services
             if (string.IsNullOrWhiteSpace(basePath) && string.IsNullOrWhiteSpace(endpointPath))
                 return "/";
 
-            var combined = $"{basePath?.TrimEnd('/')}/{endpointPath?.TrimStart('/')}";
+            var combined = $"/{basePath?.TrimEnd('/')}/{endpointPath?.TrimStart('/')}";
             return combined.Replace("//", "/").TrimEnd('/');
         }
     }
