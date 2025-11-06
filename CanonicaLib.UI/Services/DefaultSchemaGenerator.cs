@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using Namotion.Reflection;
 using System.Collections.ObjectModel;
@@ -15,10 +16,12 @@ namespace Zen.CanonicaLib.UI.Services
     public class DefaultSchemaGenerator : ISchemaGenerator
     {
         private readonly IDiscoveryService _discoveryService;
+        private readonly ILogger<DefaultSchemaGenerator> _logger;
 
-        public DefaultSchemaGenerator(IDiscoveryService discoveryService)
+        public DefaultSchemaGenerator(IDiscoveryService discoveryService, ILogger<DefaultSchemaGenerator> logger)
         {
             _discoveryService = discoveryService ?? throw new ArgumentNullException(nameof(discoveryService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IOpenApiSchema? GenerateSchema(Type schemaDefinition, GeneratorContext generatorContext)
@@ -53,9 +56,13 @@ namespace Zen.CanonicaLib.UI.Services
 
         private IOpenApiSchema CreateSchemaFromType(Type type, AssemblyReferenceType referenceType, GeneratorContext generatorContext)
         {
+            _logger.LogInformation("Creating schema for type: {TypeName}", type.FullName);
             var existingRef = generatorContext.GetExistingSchema(type);
             if (existingRef != null)
+            {
+                _logger.LogInformation("Schema for type {TypeName} already exists. Using existing schema reference.", type.FullName);
                 return existingRef;
+            }
 
             var schema = new OpenApiSchema();
 
@@ -71,6 +78,7 @@ namespace Zen.CanonicaLib.UI.Services
             // Handle nullable types
             if (IsNullableType(type))
             {
+                _logger.LogInformation("Type {TypeName} is nullable. Processing underlying type.", type.FullName);
                 type = Nullable.GetUnderlyingType(type) ?? type;
                 referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, type);
             }
@@ -78,6 +86,7 @@ namespace Zen.CanonicaLib.UI.Services
             // Handle primitive types
             if (IsPrimitiveType(type))
             {
+                _logger.LogInformation("Type {TypeName} is a primitive type. Creating primitive schema.", type.FullName);
                 SetPrimitiveTypeProperties(schema, type);
                 return schema;
             }
@@ -85,6 +94,7 @@ namespace Zen.CanonicaLib.UI.Services
             //Handle Object Types
             if (IsObjectType(type))
             {
+                _logger.LogInformation("Type {TypeName} is treated as an object type. Creating object schema.", type.FullName);
                 schema.Type = JsonSchemaType.Object;
                 return schema;
             }
@@ -94,6 +104,7 @@ namespace Zen.CanonicaLib.UI.Services
             {
                 schema.Type = JsonSchemaType.Array;
                 var elementType = GetElementType(type);
+                _logger.LogInformation("Type {TypeName} is an array or collection of {elementType}. Creating array schema.", type.FullName, elementType?.FullName);
                 if (elementType != null)
                 {
                     schema.Items = CreateSchemaFromType(elementType, referenceType, generatorContext);
@@ -105,6 +116,7 @@ namespace Zen.CanonicaLib.UI.Services
             // Handle enum types
             if (type.IsEnum)
             {
+                _logger.LogInformation("Type {TypeName} is an enum. Creating enum schema.", type.FullName);
                 // Create inline enum schema if not in existing schemas
                 schema.Type = JsonSchemaType.String;
                 schema.Title = type.Name;
@@ -162,10 +174,9 @@ namespace Zen.CanonicaLib.UI.Services
             if (generatorContext.AddSchema(type, schema, referenceType))
             {
                 var schemaKey = GetSchemaKey(type);
+                _logger.LogInformation("Type {TypeName} schema was newly added to context. Creating schema reference {schemaKey}.", type.FullName, schemaKey);
                 return new OpenApiSchemaReference(schemaKey);
             }
-
-
             return schema;
         }
 

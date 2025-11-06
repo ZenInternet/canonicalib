@@ -3,7 +3,7 @@
 namespace Zen.CanonicaLib.DataAnnotations
 {
     [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
-    public class OpenApiPathAttribute : Attribute
+    public class OpenApiPathAttribute : OpenApiExcludedTypeAttribute
     {
         public string? PathPattern { get; }
 
