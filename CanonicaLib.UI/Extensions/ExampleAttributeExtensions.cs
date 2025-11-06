@@ -129,6 +129,10 @@ namespace Zen.CanonicaLib.UI.Extensions
 
                 foreach (var property in properties)
                 {
+                    // Skip indexed properties (indexers) - we'll handle them separately if the object implements IEnumerable
+                    if (IsIndexedProperty(property))
+                        continue;
+
                     var propertyValue = property.GetValue(obj);
 
                     if (propertyValue == null)
@@ -174,6 +178,28 @@ namespace Zen.CanonicaLib.UI.Extensions
                         }
                     }
                 }
+
+                // Handle indexed properties by validating items if the object implements IEnumerable
+                if (obj is IEnumerable enumerable && !IsPrimitiveType(objectType))
+                {
+                    int index = 0;
+                    foreach (var item in enumerable)
+                    {
+                        if (item != null)
+                        {
+                            var itemValidationContext = new ValidationContext(item, serviceProvider, validationContext.Items)
+                            {
+                                MemberName = $"[{index}]"
+                            };
+
+                            if (!ValidateObjectRecursively(item, itemValidationContext, validationResults, validatedObjects, serviceProvider))
+                            {
+                                isValid = false;
+                            }
+                        }
+                        index++;
+                    }
+                }
             }
             finally
             {
@@ -181,6 +207,14 @@ namespace Zen.CanonicaLib.UI.Extensions
             }
 
             return isValid;
+        }
+
+        /// <summary>
+        /// Determines if a property is an indexed property (indexer)
+        /// </summary>
+        private static bool IsIndexedProperty(PropertyInfo property)
+        {
+            return property.GetIndexParameters().Length > 0;
         }
 
         /// <summary>
