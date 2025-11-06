@@ -12,6 +12,7 @@ namespace Zen.CanonicaLib.UI.Services
     public sealed class DefaultDocumentGenerator : IDocumentGenerator
     {
         private readonly IInfoGenerator _infoGenerator;
+        private readonly ISchemasGenerator _schemasGenerator;
         private readonly IPathsGenerator _pathsGenerator;
         private readonly ISecurityGenerator _securityGenerator;
         private readonly ITagGroupsGenerator _tagGroupsGenerator;
@@ -23,6 +24,7 @@ namespace Zen.CanonicaLib.UI.Services
         /// Initializes a new instance of the <see cref="DefaultDocumentGenerator"/> class.
         /// </summary>
         /// <param name="infoGenerator">Generator for OpenAPI info section.</param>
+        /// <param name="schemasGenerator">Generator for OpenAPI schemas section.</param>
         /// <param name="serversGenerator">Generator for OpenAPI servers section.</param>
         /// <param name="pathsGenerator">Generator for OpenAPI paths section.</param>
         /// <param name="securityGenerator">Generator for OpenAPI security section.</param>
@@ -32,6 +34,7 @@ namespace Zen.CanonicaLib.UI.Services
         /// <exception cref="ArgumentNullException">Thrown when any required parameter is null.</exception>
         public DefaultDocumentGenerator(
             IInfoGenerator infoGenerator,
+            ISchemasGenerator schemasGenerator,
             IServersGenerator serversGenerator,
             IPathsGenerator pathsGenerator,
             ISecurityGenerator securityGenerator,
@@ -40,6 +43,7 @@ namespace Zen.CanonicaLib.UI.Services
             ILogger<DefaultDocumentGenerator> logger)
         {
             _infoGenerator = infoGenerator ?? throw new ArgumentNullException(nameof(infoGenerator));
+            _schemasGenerator = schemasGenerator ?? throw new ArgumentNullException(nameof(schemasGenerator));
             _serversGenerator = serversGenerator ?? throw new ArgumentNullException(nameof(serversGenerator));
             _pathsGenerator = pathsGenerator ?? throw new ArgumentNullException(nameof(pathsGenerator));
             _securityGenerator = securityGenerator ?? throw new ArgumentNullException(nameof(securityGenerator));
@@ -71,6 +75,7 @@ namespace Zen.CanonicaLib.UI.Services
                 generatorContext.Document.Info = _infoGenerator.GenerateInfo(generatorContext);
 
                 _logger.LogDebug("Generating servers section");
+                _schemasGenerator.GenerateSchemas(generatorContext);
                 generatorContext.Document.Servers = _serversGenerator.GenerateServers(generatorContext);
 
                 generatorContext.Document.Components!.SecuritySchemes = _securityGenerator.GenerateSecuritySchemes(generatorContext);
