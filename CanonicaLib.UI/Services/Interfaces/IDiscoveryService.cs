@@ -29,5 +29,6 @@ namespace Zen.CanonicaLib.UI.Services.Interfaces
         public bool HasIndexDocument(Assembly assembly);
         public IList<string> GetDocumentList(Assembly assembly);
         public string GetDocumentContent(Assembly assembly, string documentName);
+        public Stream FindAttachmentInAssembly(Assembly assembly, string attachment);
     }
 }

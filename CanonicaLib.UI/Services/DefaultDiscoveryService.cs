@@ -1,4 +1,5 @@
-﻿using Microsoft.OpenApi;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.OpenApi;
 using Namotion.Reflection;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
@@ -209,6 +210,17 @@ namespace Zen.CanonicaLib.UI.Services
             return reader.ReadToEnd();
         }
 
+        public Stream FindAttachmentInAssembly(Assembly assembly, string attachment)
+        {
+            var resourceName = $"{assembly.FullName?.Split(",")[0]}.Docs.attachments.{attachment}";
+            if (assembly.GetManifestResourceNames().All(rn => rn != resourceName))
+                throw new FileNotFoundException($"Attachment '{attachment}' not found in assembly resources.");
+            var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+                throw new InvalidOperationException($"Unable to load attachment '{attachment}' from assembly resources.");
+            return stream;
+        }
+
         public ISet<OpenApiTag> FindWebhookTags(Assembly assembly)
         {
             var tagAttributes = FindWebhookDefinitions(assembly)
@@ -222,5 +234,6 @@ namespace Zen.CanonicaLib.UI.Services
                 Description = x.Summary.IfEmpty(null)
             }).ToHashSet();
         }
+
     }
 }
