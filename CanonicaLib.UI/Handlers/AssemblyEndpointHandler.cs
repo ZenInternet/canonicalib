@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
+using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Handlers
@@ -15,10 +16,14 @@ namespace Zen.CanonicaLib.UI.Handlers
             // Inbound slugs are in the format /my/assembly-name/is/this which would be converted to My.AssemblyName.Is.This
             var slug = context.Request.RouteValues["slug"]?.ToString() ?? string.Empty;
 
-            var assemblyName = string.Join('.', slug
-                .Split('/', StringSplitOptions.RemoveEmptyEntries)
-                .Select(part => char.ToUpper(part[0]) + part.Substring(1)));
+            if (slug.Contains("/attachments/"))
+            {
+                // Redirect to attachment handler if the URL contains /attachments/
+                await AttachmentEndpointHandler.HandleAttachmentRequest(context);
+                return;
+            }
 
+            var assemblyName = slug.ConvertToAssemblyName();
             var assembly = discoveryService.FindCanonicalAssembly(assemblyName);
 
             if (assembly == null)

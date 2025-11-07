@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.Models;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
@@ -24,6 +25,13 @@ namespace Zen.CanonicaLib.UI.Handlers
             // Extract the assembly slug from the route
             var slug = context.Request.RouteValues["slug"]?.ToString() ?? string.Empty;
 
+            if (slug.Contains("/attachments/"))
+            {
+                // Redirect to attachment handler if the URL contains /attachments/
+                await AttachmentEndpointHandler.HandleAttachmentRequest(context);
+                return;
+            }
+
             if (string.IsNullOrEmpty(slug))
             {
                 context.Response.StatusCode = 400;
@@ -32,7 +40,7 @@ namespace Zen.CanonicaLib.UI.Handlers
             }
 
             // Convert slug to assembly name to validate it exists
-            var assemblyName = ConvertSlugToAssemblyName(slug);
+            var assemblyName = slug.ConvertToAssemblyName();
             var assembly = discoveryService.FindCanonicalAssembly(assemblyName);
 
             if (assembly == null)
@@ -102,11 +110,5 @@ namespace Zen.CanonicaLib.UI.Handlers
             await context.Response.WriteAsync(stringWriter.ToString());
         }
 
-        private static string ConvertSlugToAssemblyName(string slug)
-        {
-            return string.Join('.', slug
-                .Split('/', StringSplitOptions.RemoveEmptyEntries)
-                .Select(part => char.ToUpper(part[0]) + part.Substring(1)));
-        }
     }
 }
