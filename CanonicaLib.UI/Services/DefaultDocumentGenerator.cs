@@ -77,6 +77,7 @@ namespace Zen.CanonicaLib.UI.Services
                 _schemasGenerator.GenerateSchemas(generatorContext);
 
                 _logger.LogDebug("Generating servers section");
+                _schemasGenerator.GenerateSchemas(generatorContext);
                 generatorContext.Document.Servers = _serversGenerator.GenerateServers(generatorContext);
 
                 generatorContext.Document.Components!.SecuritySchemes = _securityGenerator.GenerateSecuritySchemes(generatorContext);
