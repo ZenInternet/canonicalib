@@ -1,0 +1,12 @@
+bin/
+obj/
+comparison-report.md
+*.nupkg
+report.json
+*-developer.md
+*-ai-prompt.txt
+migration-guide*
+.env
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
