@@ -1,0 +1,5 @@
+bin/
+obj/
+comparison-report.md
+*.nupkg
+report.json
