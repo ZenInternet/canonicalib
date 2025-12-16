@@ -281,12 +281,12 @@ public class AssemblyAnalyzer
             else if (hasType1)
             {
                 status = ComparisonStatus.OnlyInPackage1;
-                matchedTypes1.Add(typeName);
+                // Don't add to matchedTypes - let namespace detection check these
             }
             else
             {
                 status = ComparisonStatus.OnlyInPackage2;
-                matchedTypes2.Add(typeName);
+                // Don't add to matchedTypes - let namespace detection check these
             }
 
             comparisons.Add(new TypeComparison
@@ -358,6 +358,18 @@ public class AssemblyAnalyzer
 
     private bool AreMembersSimilar(Models.TypeInfo type1, Models.TypeInfo type2)
     {
+        // For enums, just compare member names (field names) since signatures include the enum type
+        if (type1.Kind == "Enum" && type2.Kind == "Enum")
+        {
+            var names1 = new HashSet<string>(type1.Members.Select(m => m.Name));
+            var names2 = new HashSet<string>(type2.Members.Select(m => m.Name));
+            
+            var commonNames = names1.Intersect(names2).Count();
+            var totalNames = Math.Max(names1.Count, names2.Count);
+            
+            return totalNames > 0 && (commonNames / (double)totalNames) >= 0.8;
+        }
+        
         // Consider types similar if they have at least 80% of the same member signatures
         if (type1.Members.Count == 0 && type2.Members.Count == 0)
             return true;
