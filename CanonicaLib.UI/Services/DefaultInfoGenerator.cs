@@ -27,7 +27,9 @@ namespace Zen.CanonicaLib.UI.Services
             return new OpenApiInfo
             {
                 Title = library.FriendlyName,
-                Version = assembly.GetName().Version?.ToString() ?? "0.0.0.0",
+                Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion 
+                    ?? assembly.GetName().Version?.ToString() 
+                    ?? "0.0.0.0",
                 Description = description,
                 License = library.License ?? new OpenApiLicense
                 {
