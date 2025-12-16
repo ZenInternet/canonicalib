@@ -18,7 +18,13 @@ public class PackageExtractor
 
     public async Task<PackageInfo> ExtractPackageAsync(string packageIdentifier)
     {
-        // Check if it's a file path
+        // Check if it's a DLL file path
+        if (File.Exists(packageIdentifier) && packageIdentifier.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            return ExtractSingleAssembly(packageIdentifier);
+        }
+
+        // Check if it's a .nupkg file path
         if (File.Exists(packageIdentifier) && packageIdentifier.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
         {
             return await ExtractLocalPackageAsync(packageIdentifier);
@@ -28,13 +34,32 @@ public class PackageExtractor
         var parts = packageIdentifier.Split('/');
         if (parts.Length != 2)
         {
-            throw new ArgumentException("Package identifier must be in format 'PackageId/Version' or a path to .nupkg file");
+            throw new ArgumentException("Package identifier must be in format 'PackageId/Version', a path to .nupkg file, or a path to .dll file");
         }
 
         var packageId = parts[0];
         var version = parts[1];
 
         return await DownloadAndExtractPackageAsync(packageId, version);
+    }
+
+    private PackageInfo ExtractSingleAssembly(string dllPath)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(dllPath);
+        var extractPath = Path.Combine(Path.GetTempPath(), $"dll_compare_{Guid.NewGuid()}");
+        Directory.CreateDirectory(extractPath);
+
+        // Copy the DLL to the temp location
+        var targetPath = Path.Combine(extractPath, Path.GetFileName(dllPath));
+        File.Copy(dllPath, targetPath);
+
+        return new PackageInfo
+        {
+            PackageId = fileName,
+            Version = "Direct DLL",
+            ExtractPath = extractPath,
+            AssemblyPaths = new List<string> { targetPath }
+        };
     }
 
     private async Task<PackageInfo> ExtractLocalPackageAsync(string nupkgPath)
