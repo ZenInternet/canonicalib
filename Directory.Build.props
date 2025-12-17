@@ -5,7 +5,10 @@
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerVerbosity>minimal</MinVerVerbosity>
-    <MinVerBuildMetadata>none</MinVerBuildMetadata>    
+    <MinVerBuildMetadata>none</MinVerBuildMetadata>
+    <MinVerMinimumMajorMinor>1.1</MinVerMinimumMajorMinor>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    
     <!-- Package Icon -->
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
