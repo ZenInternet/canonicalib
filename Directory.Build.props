@@ -7,6 +7,7 @@
     <MinVerVerbosity>minimal</MinVerVerbosity>
     <MinVerBuildMetadata>none</MinVerBuildMetadata>
     <MinVerMinimumMajorMinor>1.1</MinVerMinimumMajorMinor>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
     
     <!-- Package Icon -->
     <PackageIcon>icon.png</PackageIcon>

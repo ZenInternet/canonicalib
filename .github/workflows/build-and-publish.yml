@@ -35,8 +35,16 @@ jobs:
     - name: Calculate version
       id: version
       run: |
-        # Get the latest tag
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.1.0")
+        # Determine which branch to check for tags
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # For PRs, use the base (target) branch's latest tag
+          TARGET_BRANCH="${{ github.base_ref }}"
+          echo "PR detected, checking tags on target branch: $TARGET_BRANCH"
+          LATEST_TAG=$(git describe --tags --abbrev=0 origin/$TARGET_BRANCH 2>/dev/null || echo "v0.10.1")
+        else
+          # For pushes, use current branch's latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.10.1")
+        fi
         echo "Latest tag: $LATEST_TAG"
         
         # Extract version number (remove 'v' prefix)
@@ -125,7 +133,13 @@ jobs:
       run: dotnet restore
     
     - name: Build solution
-      run: dotnet build --configuration Release --no-restore
+      run: |
+        dotnet build --configuration Release --no-restore \
+          -p:Version=${{ steps.version.outputs.version }} \
+          -p:AssemblyVersion=1.0.0.0 \
+          -p:FileVersion=${{ steps.version.outputs.version }} \
+          -p:InformationalVersion=${{ steps.version.outputs.version }} \
+          -p:MinVerSkip=true
     
     - name: Run tests
       run: dotnet test --configuration Release --no-build --verbosity normal
@@ -252,43 +266,6 @@ jobs:
           ${{ github.event.head_commit.message }}
     
     - name: Publish to NuGet.org
-      run: |
-        dotnet nuget push ./packages/*.nupkg \
-          --api-key ${{ secrets.NUGET_API_KEY }} \
-          --source https://api.nuget.org/v3/index.json \
-          --skip-duplicate
-
-  publish-tagged:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-    
-    - name: Restore dependencies
-      run: dotnet restore
-    
-    - name: Build solution
-      run: dotnet build --configuration Release --no-restore
-    
-    - name: Run tests
-      run: dotnet test --configuration Release --no-build --verbosity normal
-    
-    - name: Pack CanonicaLib.DataAnnotations
-      run: dotnet pack CanonicaLib.DataAnnotations/CanonicaLib.DataAnnotations.csproj --configuration Release --no-build --output ./packages -p:MinVerSkip=true
-    
-    - name: Pack CanonicaLib.UI
-      run: dotnet pack CanonicaLib.UI/CanonicaLib.UI.csproj --configuration Release --no-build --output ./packages -p:MinVerSkip=true
-    
-    - name: Publish to NuGet.org (manual tag)
       run: |
         dotnet nuget push ./packages/*.nupkg \
           --api-key ${{ secrets.NUGET_API_KEY }} \
