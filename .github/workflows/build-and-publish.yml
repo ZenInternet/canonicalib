@@ -175,9 +175,9 @@ jobs:
   publish-prerelease:
     needs: build
     runs-on: ubuntu-latest
-    # Publish prereleases for: feature branches, next branch, and PRs to next
+    # Publish prereleases for: next branch pushes and PRs to next
     if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/next' || startsWith(github.ref, 'refs/heads/feature/'))) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/next') ||
       (github.event_name == 'pull_request' && github.base_ref == 'next')
     
     steps:
