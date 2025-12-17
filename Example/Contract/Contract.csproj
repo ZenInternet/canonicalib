@@ -12,6 +12,8 @@
 	<PropertyGroup>
 		<PackageId>Test.Contract</PackageId>
 		<Description>This is the package description</Description>
+    <Version>1.0.0.0-prerelease</Version>
+    <PackageVersion>1.0.0.0-prerelease</PackageVersion>
 	</PropertyGroup>
 
   <PropertyGroup>
