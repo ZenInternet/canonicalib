@@ -6,6 +6,7 @@
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerVerbosity>minimal</MinVerVerbosity>
     <MinVerBuildMetadata>none</MinVerBuildMetadata>
+    <MinVerMinimumMajorMinor>1.1</MinVerMinimumMajorMinor>
     
     <!-- Package Icon -->
     <PackageIcon>icon.png</PackageIcon>

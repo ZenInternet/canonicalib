@@ -2,10 +2,10 @@ name: Build and Publish NuGet Packages
 
 on:
   push:
-    branches: [ main, next ]
+    branches: [ main, next, 'feature/**' ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, next ]
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -19,6 +19,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+      package_suffix: ${{ steps.version.outputs.package_suffix }}
       
     steps:
     - name: Checkout code
@@ -35,65 +36,90 @@ jobs:
       id: version
       run: |
         # Get the latest tag
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.1.0")
         echo "Latest tag: $LATEST_TAG"
         
         # Extract version number (remove 'v' prefix)
-        VERSION=${LATEST_TAG#v}
+        BASE_VERSION=${LATEST_TAG#v}
         
         # Split version into parts
-        IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
+        IFS='.' read -ra VERSION_PARTS <<< "$BASE_VERSION"
         MAJOR=${VERSION_PARTS[0]}
         MINOR=${VERSION_PARTS[1]}
         PATCH=${VERSION_PARTS[2]:-0}
         
-        # Determine if this is a prerelease build
-        if [ "${{ github.ref }}" = "refs/heads/next" ]; then
-          # For next branch, increment minor version and add prerelease suffix
+        # Determine versioning based on branch/context
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # PR to next branch -> prerelease versions
+          if [[ "${{ github.base_ref }}" == "next" ]]; then
+            # feature/* -> next: use next minor version with -prerelease
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$((MINOR + 1))
+            NEW_PATCH=0
+            BUILD_NUMBER=${{ github.run_number }}
+            VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-prerelease.$BUILD_NUMBER"
+            PACKAGE_SUFFIX="prerelease"
+            IS_PRERELEASE=true
+            echo "Feature PR to next: $VERSION"
+          # PR to main branch -> rc versions
+          elif [[ "${{ github.base_ref }}" == "main" ]]; then
+            # next -> main: use next minor version with -rc
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$((MINOR + 1))
+            NEW_PATCH=0
+            BUILD_NUMBER=${{ github.run_number }}
+            VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-rc.$BUILD_NUMBER"
+            PACKAGE_SUFFIX="rc"
+            IS_PRERELEASE=true
+            echo "PR to main (rc): $VERSION"
+          fi
+        elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          # Push to main -> stable release (auto-increment)
           NEW_MAJOR=$MAJOR
           NEW_MINOR=$((MINOR + 1))
           NEW_PATCH=0
-          
-          # Generate prerelease identifier with commit hash
-          COMMIT_HASH=$(git rev-parse --short HEAD)
-          BUILD_NUMBER=${{ github.run_number }}
-          PRERELEASE_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-preview.$BUILD_NUMBER+$COMMIT_HASH"
-          
-          echo "version=$PRERELEASE_VERSION" >> $GITHUB_OUTPUT
-          echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          echo "Prerelease version: $PRERELEASE_VERSION"
-        elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          # For main branch, calculate proper release version based on commits
-          COMMITS=$(git log $LATEST_TAG..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
-          
-          # Default to patch increment
+          VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+          PACKAGE_SUFFIX=""
+          IS_PRERELEASE=false
+          echo "Release version: $VERSION"
+        elif [[ "${{ github.ref }}" == "refs/heads/next" ]]; then
+          # Push to next -> prerelease
           NEW_MAJOR=$MAJOR
-          NEW_MINOR=$MINOR
-          NEW_PATCH=$((PATCH + 1))
-          
-          # Check for breaking changes or major features
-          if echo "$COMMITS" | grep -i "BREAKING CHANGE\|breaking:" >/dev/null; then
-            NEW_MAJOR=$((MAJOR + 1))
-            NEW_MINOR=0
-            NEW_PATCH=0
-          elif echo "$COMMITS" | grep -i "feat\|feature:" >/dev/null; then
-            NEW_MINOR=$((MINOR + 1))
-            NEW_PATCH=0
-          fi
-          
-          RELEASE_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
-          
-          echo "version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
-          echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          echo "Release version: $RELEASE_VERSION"
+          NEW_MINOR=$((MINOR + 1))
+          NEW_PATCH=0
+          BUILD_NUMBER=${{ github.run_number }}
+          VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-prerelease.$BUILD_NUMBER"
+          PACKAGE_SUFFIX="prerelease"
+          IS_PRERELEASE=true
+          echo "Next branch prerelease: $VERSION"
+        elif [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+          # Push to feature branch -> prerelease
+          NEW_MAJOR=$MAJOR
+          NEW_MINOR=$((MINOR + 1))
+          NEW_PATCH=0
+          BUILD_NUMBER=${{ github.run_number }}
+          VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-prerelease.$BUILD_NUMBER"
+          PACKAGE_SUFFIX="prerelease"
+          IS_PRERELEASE=true
+          echo "Feature branch prerelease: $VERSION"
+        elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          # Tagged release -> use tag version
+          VERSION="$BASE_VERSION"
+          PACKAGE_SUFFIX=""
+          IS_PRERELEASE=false
+          echo "Tagged release: $VERSION"
         else
-          # For tags, use the tag version
-          RELEASE_VERSION="$VERSION"
-          
-          echo "version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
-          echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          echo "Tag version: $RELEASE_VERSION"
+          # Default fallback
+          VERSION="$BASE_VERSION-dev.${{ github.run_number }}"
+          PACKAGE_SUFFIX="dev"
+          IS_PRERELEASE=true
+          echo "Dev build: $VERSION"
         fi
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+        echo "package_suffix=$PACKAGE_SUFFIX" >> $GITHUB_OUTPUT
+        echo "Final version: $VERSION (prerelease: $IS_PRERELEASE)"
     
     - name: Restore dependencies
       run: dotnet restore
@@ -131,7 +157,10 @@ jobs:
   publish-prerelease:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/next' && github.event_name == 'push'
+    # Publish prereleases for: feature branches, next branch, and PRs to next
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/next' || startsWith(github.ref, 'refs/heads/feature/'))) ||
+      (github.event_name == 'pull_request' && github.base_ref == 'next')
     
     steps:
     - name: Download packages
@@ -143,6 +172,27 @@ jobs:
     - name: Publish prerelease to NuGet.org
       run: |
         echo "Publishing prerelease packages version ${{ needs.build.outputs.version }}"
+        dotnet nuget push ./packages/*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  publish-rc:
+    needs: build
+    runs-on: ubuntu-latest
+    # Publish RC versions for PRs to main
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    
+    steps:
+    - name: Download packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages-${{ github.run_id }}
+        path: ./packages
+    
+    - name: Publish RC to NuGet.org
+      run: |
+        echo "Publishing RC packages version ${{ needs.build.outputs.version }}"
         dotnet nuget push ./packages/*.nupkg \
           --api-key ${{ secrets.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
