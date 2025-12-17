@@ -5,7 +5,32 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
+    
+    <!-- Enable packaging as .NET Global Tool -->
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>canonicalib-comparer</ToolCommandName>
+		<RootNamespace>Zen.CanonicaLib.PackageComparer</RootNamespace>
+		<AssemblyName>Zen.CanonicaLib.PackageComparer</AssemblyName>
+    
+    <!-- Package metadata -->
+    <PackageId>Zen.CanonicaLib.PackageComparer</PackageId>
+    <Title>CanonicaLib Package Comparer</Title>
+    <Description>A comprehensive CLI tool for comparing NuGet packages and DLLs with AI-powered migration analysis</Description>
+    <Authors>Zen Internet</Authors>
+    <Company>Zen Internet</Company>
+    <PackageTags>nuget;package;comparison;dll;migration;analyzer;cli</PackageTags>
+    <PackageProjectUrl>https://github.com/ZenInternet/canonicalib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ZenInternet/canonicalib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- Standalone executable settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +52,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <DependentUpon>appsettings.json</DependentUpon>
     </None>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

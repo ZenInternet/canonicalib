@@ -1,8 +1,8 @@
 using System.CommandLine;
-using CanonicaLib.PackageComparer.Services;
+using Zen.CanonicaLib.PackageComparer.Services;
 using Microsoft.Extensions.Configuration;
 
-namespace CanonicaLib.PackageComparer;
+namespace Zen.CanonicaLib.PackageComparer;
 
 public class Program
 {

@@ -1,4 +1,4 @@
-namespace CanonicaLib.PackageComparer.Models;
+namespace Zen.CanonicaLib.PackageComparer.Models;
 
 public class PackageInfo
 {

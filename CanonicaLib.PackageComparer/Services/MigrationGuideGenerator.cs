@@ -1,7 +1,7 @@
 using OpenAI.Chat;
-using CanonicaLib.PackageComparer.Models;
+using Zen.CanonicaLib.PackageComparer.Models;
 
-namespace CanonicaLib.PackageComparer.Services;
+namespace Zen.CanonicaLib.PackageComparer.Services;
 
 public class MigrationGuideGenerator
 {

@@ -1,8 +1,8 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using CanonicaLib.PackageComparer.Models;
+using Zen.CanonicaLib.PackageComparer.Models;
 
-namespace CanonicaLib.PackageComparer.Services;
+namespace Zen.CanonicaLib.PackageComparer.Services;
 
 public class AssemblyAnalyzer
 {
