@@ -239,6 +239,56 @@ jobs:
         name: nuget-packages-${{ github.run_id }}
         path: ./packages
     
+    - name: Build standalone executables
+      run: |
+        VERSION="${{ needs.build.outputs.version }}"
+        
+        # Build for Windows x64
+        dotnet publish CanonicaLib.PackageComparer/CanonicaLib.PackageComparer.csproj \
+          -c Release \
+          -r win-x64 \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:Version=$VERSION \
+          -p:MinVerSkip=true \
+          -o ./publish/win-x64
+        
+        # Build for Linux x64
+        dotnet publish CanonicaLib.PackageComparer/CanonicaLib.PackageComparer.csproj \
+          -c Release \
+          -r linux-x64 \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:Version=$VERSION \
+          -p:MinVerSkip=true \
+          -o ./publish/linux-x64
+        
+        # Build for macOS x64
+        dotnet publish CanonicaLib.PackageComparer/CanonicaLib.PackageComparer.csproj \
+          -c Release \
+          -r osx-x64 \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:Version=$VERSION \
+          -p:MinVerSkip=true \
+          -o ./publish/osx-x64
+        
+        # Build for macOS ARM64
+        dotnet publish CanonicaLib.PackageComparer/CanonicaLib.PackageComparer.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:Version=$VERSION \
+          -p:MinVerSkip=true \
+          -o ./publish/osx-arm64
+        
+        # Rename executables
+        mv ./publish/win-x64/CanonicaLib.PackageComparer.exe ./publish/canonicalib-comparer-win-x64.exe
+        mv ./publish/linux-x64/CanonicaLib.PackageComparer ./publish/canonicalib-comparer-linux-x64
+        mv ./publish/osx-x64/CanonicaLib.PackageComparer ./publish/canonicalib-comparer-osx-x64
+        mv ./publish/osx-arm64/CanonicaLib.PackageComparer ./publish/canonicalib-comparer-osx-arm64
+    
     - name: Create and push tag
       run: |
         git config --local user.email "action@github.com"
@@ -253,21 +303,44 @@ jobs:
         git push origin $NEW_TAG
     
     - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: create_release
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ needs.build.outputs.version }}
-        release_name: Release ${{ needs.build.outputs.version }}
+        name: Release ${{ needs.build.outputs.version }}
         draft: false
         prerelease: false
         body: |
-          ## Changes in ${{ needs.build.outputs.version }}
+          ## Release ${{ needs.build.outputs.version }}
           
-          This release was automatically created from the main branch.
+          ### Installation Options
           
-          ### Commits since last release:
+          **NuGet Packages:**
+          - `dotnet add package CanonicaLib.UI --version ${{ needs.build.outputs.version }}`
+          - `dotnet add package CanonicaLib.DataAnnotations --version ${{ needs.build.outputs.version }}`
+          
+          **Package Comparer Tool:**
+          - Install as .NET Global Tool: `dotnet tool install -g CanonicaLib.PackageComparer --version ${{ needs.build.outputs.version }}`
+          - Download standalone executables below for your platform
+          
+          ### What's Changed
+          
           ${{ github.event.head_commit.message }}
+        files: |
+          ./publish/canonicalib-comparer-win-x64.exe
+          ./publish/canonicalib-comparer-linux-x64
+          ./publish/canonicalib-comparer-osx-x64
+          ./publish/canonicalib-comparer-osx-arm64
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Pack PackageComparer as .NET Tool
+      run: |
+        dotnet pack CanonicaLib.PackageComparer/CanonicaLib.PackageComparer.csproj \
+          --configuration Release \
+          --output ./packages \
+          -p:PackageVersion=${{ needs.build.outputs.version }} \
+          -p:MinVerSkip=true
     
     - name: Publish to NuGet.org
       run: |
