@@ -40,10 +40,10 @@ jobs:
           # For PRs, use the base (target) branch's latest tag
           TARGET_BRANCH="${{ github.base_ref }}"
           echo "PR detected, checking tags on target branch: $TARGET_BRANCH"
-          LATEST_TAG=$(git describe --tags --abbrev=0 origin/$TARGET_BRANCH 2>/dev/null || echo "v1.1.0")
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match "v1.*" origin/$TARGET_BRANCH 2>/dev/null || echo "v1.1.0")
         else
           # For pushes, use current branch's latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.1.0")
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match "v1.*" 2>/dev/null || echo "v1.1.0")
         fi
         echo "Latest tag: $LATEST_TAG"
         
