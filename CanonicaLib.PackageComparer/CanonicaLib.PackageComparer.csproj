@@ -10,9 +10,11 @@
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>canonicalib-comparer</ToolCommandName>
+		<RootNamespace>Zen.CanonicaLib.PackageComparer</RootNamespace>
+		<AssemblyName>Zen.CanonicaLib.PackageComparer</AssemblyName>
     
     <!-- Package metadata -->
-    <PackageId>CanonicaLib.PackageComparer</PackageId>
+    <PackageId>Zen.CanonicaLib.PackageComparer</PackageId>
     <Title>CanonicaLib Package Comparer</Title>
     <Description>A comprehensive CLI tool for comparing NuGet packages and DLLs with AI-powered migration analysis</Description>
     <Authors>Zen Internet</Authors>

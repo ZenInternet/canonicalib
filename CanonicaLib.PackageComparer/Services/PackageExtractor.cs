@@ -3,9 +3,9 @@ using NuGet.Packaging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
-using CanonicaLib.PackageComparer.Models;
+using Zen.CanonicaLib.PackageComparer.Models;
 
-namespace CanonicaLib.PackageComparer.Services;
+namespace Zen.CanonicaLib.PackageComparer.Services;
 
 public class PackageExtractor
 {

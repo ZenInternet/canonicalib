@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
-using CanonicaLib.PackageComparer.Models;
+using Zen.CanonicaLib.PackageComparer.Models;
 
-namespace CanonicaLib.PackageComparer.Services;
+namespace Zen.CanonicaLib.PackageComparer.Services;
 
 public class ComparisonReporter
 {
