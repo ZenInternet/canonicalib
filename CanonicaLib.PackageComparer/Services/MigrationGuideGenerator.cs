@@ -18,45 +18,33 @@ public class MigrationGuideGenerator
     {
         var client = new ChatClient("gpt-4o", _apiKey);
 
-        // Generate developer migration guide
-        Console.WriteLine("Generating developer migration guide with ChatGPT...");
-        var migrationGuide = await GenerateDeveloperGuideAsync(client, comparison, detailedReport);
+        // Generate both guides in a single ChatGPT call
+        Console.WriteLine("Generating migration guide and AI prompt with ChatGPT...");
+        var result = await GenerateCombinedGuideAsync(client, comparison, detailedReport);
 
-        // Generate AI assistant prompt
-        Console.WriteLine("Generating AI assistant migration prompt...");
-        var aiPrompt = await GenerateAIPromptAsync(client, comparison, detailedReport);
-
-        return new MigrationGuideResult
-        {
-            DeveloperGuide = migrationGuide,
-            AIAssistantPrompt = aiPrompt
-        };
+        return result;
     }
 
-    private async Task<string> GenerateDeveloperGuideAsync(
+    private async Task<MigrationGuideResult> GenerateCombinedGuideAsync(
         ChatClient client,
         AssemblyComparison comparison,
         string detailedReport)
     {
-        var systemPrompt = @"You are an expert technical writer and software architect specializing in API migration documentation. 
-Your task is to create comprehensive, developer-friendly migration guides that help teams upgrade from one version of a package to another.
+        var systemPrompt = @"You are an expert technical writer and software architect specializing in API migration documentation and AI-assisted development.
+Your task is to create two complementary migration resources:
+1. A comprehensive developer migration guide
+2. A ready-to-use AI assistant prompt for automated migration
 
-Focus on:
-- Clear, actionable migration steps
-- Code examples showing before/after patterns
-- Breaking changes highlighted with severity levels
-- Common pitfalls and solutions
-- Migration strategies (big bang vs incremental)
-- Testing recommendations
+Both should be consistent, accurate, and actionable.";
 
-Use clear markdown formatting with proper headings, code blocks, tables, and callouts.";
-
-        var userPrompt = $@"Based on the following package comparison report, create a comprehensive migration guide for developers upgrading from {comparison.Package1Name} to {comparison.Package2Name}.
+        var userPrompt = $@"Based on the following package comparison report, create TWO migration resources for upgrading from {comparison.Package1Name} to {comparison.Package2Name}.
 
 COMPARISON REPORT:
 {detailedReport}
 
-Please create a migration guide that includes:
+# RESOURCE 1: DEVELOPER MIGRATION GUIDE
+
+Create a comprehensive markdown migration guide with these sections:
 
 1. **Executive Summary** - Brief overview of changes and **migration effort estimation with detailed reasoning**. When estimating effort:
    - Consider that many changes can be automated with find/replace or AI assistance
@@ -75,9 +63,37 @@ Please create a migration guide that includes:
 8. **Testing Strategy** - Recommended approach to verify the migration
 9. **Common Issues** - Known problems and their solutions
 10. **Migration Checklist** - Final checklist before deployment
+11. **AI-Assisted Migration** - Mention that developers can use the AI prompt from RESOURCE 2
 
 For each code example, provide realistic C# code showing the old pattern and the new pattern.
-Use proper markdown formatting with syntax highlighting.";
+Use proper markdown formatting with syntax highlighting.
+
+---
+
+# RESOURCE 2: AI ASSISTANT MIGRATION PROMPT
+
+Create a self-contained prompt that developers can copy-paste into GitHub Copilot Chat, Claude, or ChatGPT to automatically migrate their code.
+
+The prompt should:
+1. Start with: 'You are helping migrate code from {comparison.Package1Name} to {comparison.Package2Name}. Please perform the following changes...'
+2. List all namespace changes with exact find/replace instructions
+3. List all constructor signature changes with refactoring instructions
+4. List all property/method removals with alternative approaches
+5. Include validation steps to verify the migration
+6. Handle common edge cases
+7. Be ready to use immediately without modification
+
+---
+
+Format your response EXACTLY as follows:
+
+=== DEVELOPER MIGRATION GUIDE ===
+[Your complete developer guide here in markdown]
+
+=== AI ASSISTANT PROMPT ===
+[Your complete AI prompt here, ready to copy-paste]
+
+=== END ===";
 
         var messages = new List<ChatMessage>
         {
@@ -86,55 +102,51 @@ Use proper markdown formatting with syntax highlighting.";
         };
 
         var completion = await client.CompleteChatAsync(messages);
-        return completion.Value.Content[0].Text;
-    }
+        var fullResponse = completion.Value.Content[0].Text;
 
-    private async Task<string> GenerateAIPromptAsync(
-        ChatClient client,
-        AssemblyComparison comparison,
-        string detailedReport)
-    {
-        var systemPrompt = @"You are an expert at creating prompts for AI coding assistants like GitHub Copilot, Claude, and ChatGPT.
-Your task is to create a comprehensive, single-prompt instruction that an AI assistant can use to automatically perform code migrations.
+        // Parse the response to extract both sections
+        var devGuideMarker = "=== DEVELOPER MIGRATION GUIDE ===";
+        var aiPromptMarker = "=== AI ASSISTANT PROMPT ===";
+        var endMarker = "=== END ===";
 
-The prompt should be:
-- Self-contained and complete
-- Specific about search patterns and replacements
-- Include validation steps
-- Handle edge cases
-- Be formatted for easy copy-paste into AI assistants";
+        var devGuideStart = fullResponse.IndexOf(devGuideMarker);
+        var aiPromptStart = fullResponse.IndexOf(aiPromptMarker);
+        var endIndex = fullResponse.IndexOf(endMarker);
 
-        var userPrompt = $@"Based on the following package comparison report, create a comprehensive prompt that developers can give to AI coding assistants (GitHub Copilot, Claude, etc.) to automatically migrate their codebase from {comparison.Package1Name} to {comparison.Package2Name}.
+        string developerGuide;
+        string aiPrompt;
 
-COMPARISON REPORT:
-{detailedReport}
-
-Create a prompt that:
-
-1. Explains the migration context and scope
-2. Lists all namespace changes with find/replace instructions
-3. Lists all constructor signature changes with refactoring instructions
-4. Lists all property/method removals with alternative approaches
-5. Includes validation steps to verify the migration
-6. Handles common edge cases
-
-The prompt should be:
-- Ready to copy-paste into GitHub Copilot Chat, Claude, or ChatGPT
-- Self-contained (no external references needed)
-- Specific with exact type names and namespaces
-- Include examples of what to look for and how to fix it
-
-Format the output as a single, cohesive prompt that starts with something like:
-'You are helping migrate code from [Package] version X to version Y. Please perform the following changes...'";
-
-        var messages = new List<ChatMessage>
+        if (devGuideStart >= 0 && aiPromptStart >= 0)
         {
-            new SystemChatMessage(systemPrompt),
-            new UserChatMessage(userPrompt)
-        };
+            developerGuide = fullResponse.Substring(
+                devGuideStart + devGuideMarker.Length,
+                aiPromptStart - (devGuideStart + devGuideMarker.Length)
+            ).Trim();
 
-        var completion = await client.CompleteChatAsync(messages);
-        return completion.Value.Content[0].Text;
+            if (endIndex >= 0)
+            {
+                aiPrompt = fullResponse.Substring(
+                    aiPromptStart + aiPromptMarker.Length,
+                    endIndex - (aiPromptStart + aiPromptMarker.Length)
+                ).Trim();
+            }
+            else
+            {
+                aiPrompt = fullResponse.Substring(aiPromptStart + aiPromptMarker.Length).Trim();
+            }
+        }
+        else
+        {
+            // Fallback: use the full response for both
+            developerGuide = fullResponse;
+            aiPrompt = "Unable to parse AI prompt from response. Please use the developer guide above.";
+        }
+
+        return new MigrationGuideResult
+        {
+            DeveloperGuide = developerGuide,
+            AIAssistantPrompt = aiPrompt
+        };
     }
 }
 
