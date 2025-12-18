@@ -1,5 +1,6 @@
 using NuGet.Common;
 using NuGet.Configuration;
+using NuGet.Credentials;
 using NuGet.Packaging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
@@ -12,9 +13,17 @@ public class PackageExtractor
 {
     private readonly IEnumerable<PackageSource> _packageSources;
     private readonly ISettings _settings;
+    private static bool _credentialProvidersInitialized = false;
 
     public PackageExtractor(string? packageSource = null)
     {
+        // Initialize credential providers once (for Azure DevOps authentication)
+        if (!_credentialProvidersInitialized)
+        {
+            DefaultCredentialServiceUtility.SetupDefaultCredentialService(NullLogger.Instance, nonInteractive: true);
+            _credentialProvidersInitialized = true;
+        }
+        
         // Load NuGet settings from default locations (nuget.config files)
         _settings = Settings.LoadDefaultSettings(root: null);
         
