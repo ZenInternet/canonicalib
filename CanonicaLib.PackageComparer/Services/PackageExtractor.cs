@@ -6,6 +6,8 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Zen.CanonicaLib.PackageComparer.Models;
 
 namespace Zen.CanonicaLib.PackageComparer.Services;
@@ -139,12 +141,17 @@ public class PackageExtractor
         var targetPath = Path.Combine(extractPath, Path.GetFileName(dllPath));
         File.Copy(dllPath, targetPath);
 
+        // Detect target framework from assembly
+        var targetFramework = DetectTargetFrameworkFromAssembly(dllPath);
+
         return new PackageInfo
         {
             PackageId = fileName,
             Version = "Direct DLL",
             ExtractPath = extractPath,
-            AssemblyPaths = new List<string> { targetPath }
+            AssemblyPaths = new List<string> { targetPath },
+            TargetFramework = targetFramework,
+            AvailableFrameworks = targetFramework != null ? new List<string> { targetFramework } : null
         };
     }
 
@@ -174,15 +181,23 @@ public class PackageExtractor
             await sourceStream.CopyToAsync(targetStream);
         }
 
-        // Download dependencies
+        // Get main package assemblies BEFORE downloading dependencies
+        var mainPackageAssemblies = GetMainPackageAssemblies(extractPath);
+
+        // Download dependencies (needed for assembly loading) but don't include them in comparison
         await DownloadDependenciesAsync(packageReader, extractPath);
+
+        var dependencyPaths = GetDependencyPaths(extractPath);
+        var availableFrameworks = GetAvailableFrameworks(extractPath);
 
         return new PackageInfo
         {
             PackageId = identity.Id,
             Version = identity.Version.ToString(),
             ExtractPath = extractPath,
-            AssemblyPaths = GetAssemblyPaths(extractPath)
+            AssemblyPaths = mainPackageAssemblies,
+            DependencyPaths = dependencyPaths,
+            AvailableFrameworks = availableFrameworks
         };
     }
 
@@ -264,15 +279,25 @@ public class PackageExtractor
             await sourceStream.CopyToAsync(targetStream);
         }
 
-        // Download dependencies
-        await DownloadDependenciesAsync(packageReader, extractPath);
+        // Get main package assemblies BEFORE downloading dependencies
+        var mainPackageAssemblies = GetMainPackageAssemblies(extractPath);
+
+        // Download dependencies (needed for assembly loading) but don't include them in comparison
+        using var packageStreamForDeps = File.OpenRead(packagePath);
+        using var packageReaderForDeps = new PackageArchiveReader(packageStreamForDeps);
+        await DownloadDependenciesAsync(packageReaderForDeps, extractPath);
+
+        var dependencyPaths = GetDependencyPaths(extractPath);
+        var availableFrameworks = GetAvailableFrameworks(extractPath);
 
         return new PackageInfo
         {
             PackageId = packageId,
             Version = versionString,
             ExtractPath = extractPath,
-            AssemblyPaths = GetAssemblyPaths(extractPath)
+            AssemblyPaths = mainPackageAssemblies,
+            DependencyPaths = dependencyPaths,
+            AvailableFrameworks = availableFrameworks
         };
     }
 
@@ -396,13 +421,10 @@ public class PackageExtractor
                                 var frameworkFiles = libFiles.Where(f => f.StartsWith($"lib/{bestFramework}/", StringComparison.OrdinalIgnoreCase));
                                 foreach (var file in frameworkFiles)
                                 {
-                                    var targetPath = Path.Combine(extractPath, file);
-                                    var targetDir = Path.GetDirectoryName(targetPath);
-                                    if (targetDir != null && !Directory.Exists(targetDir))
-                                    {
-                                        Directory.CreateDirectory(targetDir);
-                                    }
-
+                                    // Extract to dependencies folder, not main lib folder
+                                    var fileName = Path.GetFileName(file);
+                                    var targetPath = Path.Combine(dependenciesFolder, fileName);
+                                    
                                     // Skip if already extracted (from another dependency)
                                     if (File.Exists(targetPath))
                                         continue;
@@ -474,6 +496,34 @@ public class PackageExtractor
         return assemblies;
     }
 
+    private List<string> GetMainPackageAssemblies(string extractPath)
+    {
+        // Only get assemblies from the main package's lib folder, exclude dependencies folder
+        var assemblies = new List<string>();
+        var libFolder = Path.Combine(extractPath, "lib");
+
+        if (Directory.Exists(libFolder))
+        {
+            assemblies.AddRange(Directory.GetFiles(libFolder, "*.dll", SearchOption.AllDirectories));
+        }
+
+        return assemblies;
+    }
+
+    private List<string> GetDependencyPaths(string extractPath)
+    {
+        // Get all dependency DLLs from the dependencies folder
+        var dependencies = new List<string>();
+        var dependenciesFolder = Path.Combine(extractPath, "dependencies");
+
+        if (Directory.Exists(dependenciesFolder))
+        {
+            dependencies.AddRange(Directory.GetFiles(dependenciesFolder, "*.dll", SearchOption.TopDirectoryOnly));
+        }
+
+        return dependencies;
+    }
+
     public void Cleanup(PackageInfo packageInfo)
     {
         if (Directory.Exists(packageInfo.ExtractPath))
@@ -487,5 +537,283 @@ public class PackageExtractor
                 // Ignore cleanup errors
             }
         }
+    }
+
+    public void SelectTargetFramework(PackageInfo package1, PackageInfo package2)
+    {
+        // Both are DLLs - ensure they're the same framework
+        if (package1.TargetFramework != null && package2.TargetFramework != null)
+        {
+            if (!string.Equals(package1.TargetFramework, package2.TargetFramework, StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Warning: Comparing DLLs built for different frameworks:");
+                Console.WriteLine($"  Package 1: {package1.TargetFramework}");
+                Console.WriteLine($"  Package 2: {package2.TargetFramework}");
+                Console.WriteLine("  Results may not be accurate.\n");
+            }
+            return;
+        }
+
+        // One is a DLL, other is NuGet - find matching framework
+        if (package1.TargetFramework != null && package2.AvailableFrameworks != null)
+        {
+            var matchingFramework = package2.AvailableFrameworks
+                .FirstOrDefault(f => string.Equals(f, package1.TargetFramework, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingFramework != null)
+            {
+                package2.TargetFramework = matchingFramework;
+                FilterAssembliesByFramework(package2, matchingFramework);
+                Console.WriteLine($"Selected matching framework for comparison: {matchingFramework}\n");
+            }
+            else
+            {
+                Console.WriteLine($"Warning: Package 2 does not contain framework '{package1.TargetFramework}'");
+                Console.WriteLine($"Available frameworks: {string.Join(", ", package2.AvailableFrameworks)}");
+                Console.WriteLine("Using best available framework for Package 2\n");
+                var bestFramework = SelectBestFramework(package2.AvailableFrameworks);
+                package2.TargetFramework = bestFramework;
+                FilterAssembliesByFramework(package2, bestFramework);
+            }
+            return;
+        }
+
+        if (package2.TargetFramework != null && package1.AvailableFrameworks != null)
+        {
+            var matchingFramework = package1.AvailableFrameworks
+                .FirstOrDefault(f => string.Equals(f, package2.TargetFramework, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingFramework != null)
+            {
+                package1.TargetFramework = matchingFramework;
+                FilterAssembliesByFramework(package1, matchingFramework);
+                Console.WriteLine($"Selected matching framework for comparison: {matchingFramework}\n");
+            }
+            else
+            {
+                Console.WriteLine($"Warning: Package 1 does not contain framework '{package2.TargetFramework}'");
+                Console.WriteLine($"Available frameworks: {string.Join(", ", package1.AvailableFrameworks)}");
+                Console.WriteLine("Using best available framework for Package 1\n");
+                var bestFramework = SelectBestFramework(package1.AvailableFrameworks);
+                package1.TargetFramework = bestFramework;
+                FilterAssembliesByFramework(package1, bestFramework);
+            }
+            return;
+        }
+
+        // Both are NuGets - find common framework
+        if (package1.AvailableFrameworks != null && package2.AvailableFrameworks != null)
+        {
+            var selectedFramework = SelectCompatibleFramework(package1.AvailableFrameworks, package2.AvailableFrameworks);
+
+            if (selectedFramework != null)
+            {
+                Console.WriteLine($"Selected target framework for comparison: {selectedFramework}\n");
+                package1.TargetFramework = selectedFramework;
+                package2.TargetFramework = selectedFramework;
+                FilterAssembliesByFramework(package1, selectedFramework);
+                FilterAssembliesByFramework(package2, selectedFramework);
+            }
+            else
+            {
+                // No common framework, use best from each
+                var framework1 = SelectBestFramework(package1.AvailableFrameworks);
+                var framework2 = SelectBestFramework(package2.AvailableFrameworks);
+                package1.TargetFramework = framework1;
+                package2.TargetFramework = framework2;
+                FilterAssembliesByFramework(package1, framework1);
+                FilterAssembliesByFramework(package2, framework2);
+                Console.WriteLine("Using different frameworks:");
+                Console.WriteLine($"  Package 1: {framework1}");
+                Console.WriteLine($"  Package 2: {framework2}\n");
+            }
+        }
+    }
+
+    private void FilterAssembliesByFramework(PackageInfo package, string targetFramework)
+    {
+        var libFolder = Path.Combine(package.ExtractPath, "lib", targetFramework);
+        if (Directory.Exists(libFolder))
+        {
+            // Only keep assemblies from the main package's lib folder for the target framework
+            package.AssemblyPaths = Directory.GetFiles(libFolder, "*.dll", SearchOption.TopDirectoryOnly).ToList();
+        }
+    }
+
+    private string? DetectTargetFrameworkFromAssembly(string assemblyPath)
+    {
+        try
+        {
+            // Use MetadataLoadContext to load assembly without resolving dependencies
+            var runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+            var paths = new List<string>(runtimeAssemblies);
+            paths.Add(assemblyPath);
+            
+            var resolver = new PathAssemblyResolver(paths);
+            var mlc = new MetadataLoadContext(resolver);
+            
+            using (mlc)
+            {
+                var assembly = mlc.LoadFromAssemblyPath(assemblyPath);
+                var targetFrameworkAttr = assembly.GetCustomAttributesData()
+                    .FirstOrDefault(attr => attr.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
+                
+                if (targetFrameworkAttr != null && targetFrameworkAttr.ConstructorArguments.Count > 0)
+                {
+                    var frameworkName = targetFrameworkAttr.ConstructorArguments[0].Value?.ToString();
+                    return ParseFrameworkMoniker(frameworkName);
+                }
+            }
+        }
+        catch
+        {
+            // If we can't detect the framework, return null
+        }
+
+        return null;
+    }
+
+    private string? ParseFrameworkMoniker(string? frameworkName)
+    {
+        if (string.IsNullOrEmpty(frameworkName))
+            return null;
+
+        // Parse framework monikers like:
+        // ".NETStandard,Version=v2.1" -> "netstandard2.1"
+        // ".NETCoreApp,Version=v8.0" -> "net8.0"
+        // ".NETFramework,Version=v4.6.2" -> "net462"
+
+        if (frameworkName.StartsWith(".NETStandard", StringComparison.OrdinalIgnoreCase))
+        {
+            var version = ExtractVersion(frameworkName);
+            return version != null ? $"netstandard{version}" : null;
+        }
+        else if (frameworkName.StartsWith(".NETCoreApp", StringComparison.OrdinalIgnoreCase))
+        {
+            var version = ExtractVersion(frameworkName);
+            return version != null ? $"net{version}" : null;
+        }
+        else if (frameworkName.StartsWith(".NETFramework", StringComparison.OrdinalIgnoreCase))
+        {
+            var version = ExtractVersion(frameworkName);
+            if (version != null)
+            {
+                // Remove dots for .NET Framework (e.g., "4.6.2" -> "462")
+                var shortVersion = version.Replace(".", "");
+                return $"net{shortVersion}";
+            }
+        }
+
+        return null;
+    }
+
+    private string? ExtractVersion(string frameworkName)
+    {
+        var versionPart = frameworkName.Split(',')
+            .FirstOrDefault(p => p.Contains("Version=", StringComparison.OrdinalIgnoreCase));
+
+        if (versionPart != null)
+        {
+            var version = versionPart.Split('=')[1].TrimStart('v', 'V');
+            return version;
+        }
+
+        return null;
+    }
+
+    private List<string> GetAvailableFrameworks(string extractPath)
+    {
+        var frameworks = new List<string>();
+        var libFolder = Path.Combine(extractPath, "lib");
+
+        if (Directory.Exists(libFolder))
+        {
+            var frameworkDirs = Directory.GetDirectories(libFolder);
+            foreach (var dir in frameworkDirs)
+            {
+                var framework = Path.GetFileName(dir);
+                frameworks.Add(framework);
+            }
+        }
+
+        return frameworks;
+    }
+
+    private string SelectBestFramework(List<string> frameworks)
+    {
+        // Prefer: latest netstandard > latest LTS .NET > latest STS .NET > latest .NET Framework
+
+        // LTS versions: .NET 6, 8, 10 (even numbers)
+        // STS versions: .NET 5, 7, 9 (odd numbers)
+
+        var standardFrameworks = frameworks
+            .Where(f => f.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(f => f)
+            .ToList();
+
+        if (standardFrameworks.Any())
+            return standardFrameworks.First();
+
+        var netCoreFrameworks = frameworks
+            .Where(f => f.StartsWith("net", StringComparison.OrdinalIgnoreCase) && 
+                       !f.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase) &&
+                       !f.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase) &&
+                       char.IsDigit(f[3])) // net6.0, net8.0, etc.
+            .ToList();
+
+        if (netCoreFrameworks.Any())
+        {
+            // Parse version numbers and separate LTS from STS
+            var versionedFrameworks = netCoreFrameworks
+                .Select(f =>
+                {
+                    var versionStr = new string(f.Skip(3).TakeWhile(c => char.IsDigit(c) || c == '.').ToArray());
+                    if (int.TryParse(versionStr.Split('.')[0], out var majorVersion))
+                    {
+                        return new { Framework = f, MajorVersion = majorVersion, IsLTS = majorVersion % 2 == 0 };
+                    }
+                    return null;
+                })
+                .Where(x => x != null)
+                .ToList();
+
+            // Prefer LTS, then STS
+            var ltsFramework = versionedFrameworks
+                .Where(x => x!.IsLTS)
+                .OrderByDescending(x => x!.MajorVersion)
+                .FirstOrDefault();
+
+            if (ltsFramework != null)
+                return ltsFramework.Framework;
+
+            var stsFramework = versionedFrameworks
+                .OrderByDescending(x => x!.MajorVersion)
+                .FirstOrDefault();
+
+            if (stsFramework != null)
+                return stsFramework.Framework;
+        }
+
+        // Fallback to first available
+        return frameworks.First();
+    }
+
+    private string? SelectCompatibleFramework(List<string> package1Frameworks, List<string> package2Frameworks)
+    {
+        // Find common frameworks
+        var commonFrameworks = package1Frameworks.Intersect(package2Frameworks, StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (commonFrameworks.Any())
+        {
+            return SelectBestFramework(commonFrameworks);
+        }
+
+        // If no exact match, try to find compatible frameworks
+        // For now, just select the best from each and warn
+        Console.WriteLine("Warning: No common target framework found between packages.");
+        Console.WriteLine($"Package 1 frameworks: {string.Join(", ", package1Frameworks)}");
+        Console.WriteLine($"Package 2 frameworks: {string.Join(", ", package2Frameworks)}");
+
+        return null;
     }
 }

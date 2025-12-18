@@ -8,8 +8,8 @@ public class AssemblyAnalyzer
 {
     public AssemblyComparison ComparePackages(PackageInfo package1, PackageInfo package2)
     {
-        var package1Assemblies = AnalyzeAssemblies(package1.AssemblyPaths, "Package1");
-        var package2Assemblies = AnalyzeAssemblies(package2.AssemblyPaths, "Package2");
+        var package1Assemblies = AnalyzeAssemblies(package1.AssemblyPaths, package1.DependencyPaths ?? new List<string>(), "Package1Context");
+        var package2Assemblies = AnalyzeAssemblies(package2.AssemblyPaths, package2.DependencyPaths ?? new List<string>(), "Package2Context");
 
         var typeComparisons = CompareTypes(package1Assemblies, package2Assemblies);
 
@@ -23,15 +23,18 @@ public class AssemblyAnalyzer
         };
     }
 
-    private List<AssemblyInfo> AnalyzeAssemblies(List<string> assemblyPaths, string contextName)
+    private List<AssemblyInfo> AnalyzeAssemblies(List<string> assemblyPaths, List<string> dependencyPaths, string contextName)
     {
         var assemblies = new List<AssemblyInfo>();
         
-        // Create a separate AssemblyLoadContext to avoid assembly conflicts
-        var loadContext = new CustomAssemblyLoadContext(contextName, assemblyPaths);
+        // Create load context with both main assemblies and dependencies for resolution
+        var allPaths = new List<string>(assemblyPaths);
+        allPaths.AddRange(dependencyPaths);
+        var loadContext = new CustomAssemblyLoadContext(contextName, allPaths);
 
         try
         {
+            // Only analyze the main package assemblies, not dependencies
             foreach (var assemblyPath in assemblyPaths)
             {
                 try

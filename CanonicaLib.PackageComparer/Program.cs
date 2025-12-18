@@ -86,6 +86,9 @@ public class Program
                 Console.WriteLine("Extracting second package...");
                 var package2Info = await extractor.ExtractPackageAsync(package2);
 
+                Console.WriteLine("Selecting target framework...");
+                extractor.SelectTargetFramework(package1Info, package2Info);
+
                 Console.WriteLine("Analyzing assemblies...");
                 var comparison = analyzer.ComparePackages(package1Info, package2Info);
 
