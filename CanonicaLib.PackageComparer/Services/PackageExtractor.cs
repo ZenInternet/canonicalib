@@ -85,7 +85,11 @@ public class PackageExtractor
         {
             try
             {
-                var repository = Repository.Factory.GetCoreV3(source.Source);
+                // Create repository with proper authentication
+                var packageSourceProvider = new PackageSourceProvider(_settings);
+                var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+                var repository = sourceRepositoryProvider.CreateRepository(source);
+                
                 var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>();
 
                 var packages = await metadataResource.GetMetadataAsync(
@@ -191,7 +195,11 @@ public class PackageExtractor
         {
             try
             {
-                var repository = Repository.Factory.GetCoreV3(source.Source);
+                // Create repository with proper authentication
+                var packageSourceProvider = new PackageSourceProvider(_settings);
+                var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+                var repository = sourceRepositoryProvider.CreateRepository(source);
+                
                 var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
 
                 using (var packageStream = File.Create(packagePath))
