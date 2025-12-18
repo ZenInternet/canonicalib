@@ -6,20 +6,22 @@ namespace Zen.CanonicaLib.PackageComparer.Services;
 public class MigrationGuideGenerator
 {
     private readonly string _apiKey;
+    private readonly string _model;
 
-    public MigrationGuideGenerator(string apiKey)
+    public MigrationGuideGenerator(string apiKey, string model = "gpt-4o")
     {
         _apiKey = apiKey;
+        _model = model;
     }
 
     public async Task<MigrationGuideResult> GenerateMigrationGuideAsync(
         AssemblyComparison comparison,
         string detailedReport)
     {
-        var client = new ChatClient("gpt-4o", _apiKey);
+        var client = new ChatClient(_model, _apiKey);
 
         // Generate both guides in a single ChatGPT call
-        Console.WriteLine("Generating migration guide and AI prompt with ChatGPT...");
+        Console.WriteLine($"Generating migration guide and AI prompt with {_model}...");
         var result = await GenerateCombinedGuideAsync(client, comparison, detailedReport);
 
         return result;
