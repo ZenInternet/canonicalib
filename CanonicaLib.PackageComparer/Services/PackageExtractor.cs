@@ -56,17 +56,63 @@ public class PackageExtractor
             return await ExtractLocalPackageAsync(packageIdentifier);
         }
 
-        // Parse package ID and version from format: PackageId/Version
+        // Parse package ID and version from format: PackageId/Version or PackageId/latest
         var parts = packageIdentifier.Split('/');
         if (parts.Length != 2)
         {
-            throw new ArgumentException("Package identifier must be in format 'PackageId/Version', a path to .nupkg file, or a path to .dll file");
+            throw new ArgumentException("Package identifier must be in format 'PackageId/Version' (or 'PackageId/latest'), a path to .nupkg file, or a path to .dll file");
         }
 
         var packageId = parts[0];
-        var version = parts[1];
+        var versionString = parts[1];
 
-        return await DownloadAndExtractPackageAsync(packageId, version);
+        // If version is "latest", resolve to the latest stable version
+        if (versionString.Equals("latest", StringComparison.OrdinalIgnoreCase))
+        {
+            versionString = await GetLatestVersionAsync(packageId);
+            Console.WriteLine($"Resolved 'latest' to version: {versionString}");
+        }
+
+        return await DownloadAndExtractPackageAsync(packageId, versionString);
+    }
+
+    private async Task<string> GetLatestVersionAsync(string packageId)
+    {
+        var cache = new SourceCacheContext();
+        Exception? lastException = null;
+
+        foreach (var source in _packageSources)
+        {
+            try
+            {
+                var repository = Repository.Factory.GetCoreV3(source.Source);
+                var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>();
+
+                var packages = await metadataResource.GetMetadataAsync(
+                    packageId,
+                    includePrerelease: false,
+                    includeUnlisted: false,
+                    cache,
+                    NullLogger.Instance,
+                    CancellationToken.None);
+
+                var latestPackage = packages
+                    .OrderByDescending(p => p.Identity.Version)
+                    .FirstOrDefault();
+
+                if (latestPackage != null)
+                {
+                    return latestPackage.Identity.Version.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                Console.WriteLine($"Failed to get metadata from {source.Source}: {ex.Message}");
+            }
+        }
+
+        throw new Exception($"Failed to find latest version for package '{packageId}' from any configured source. Last error: {lastException?.Message}");
     }
 
     private PackageInfo ExtractSingleAssembly(string dllPath)
@@ -146,10 +192,6 @@ public class PackageExtractor
             try
             {
                 var repository = Repository.Factory.GetCoreV3(source.Source);
-                
-                // Get credentials from NuGet settings if available
-                var credentialService = new SourceRepositoryProvider(_settings, Repository.Provider.GetCoreV3());
-                
                 var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
 
                 using (var packageStream = File.Create(packagePath))

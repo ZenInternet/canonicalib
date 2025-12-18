@@ -5,6 +5,7 @@ A command-line tool for comparing two NuGet packages and performing gap analysis
 ## Features
 
 - Download and extract NuGet packages from NuGet.org or use local .nupkg files
+- **Latest Version Resolution** - Use `PackageId/latest` to compare against the latest stable version
 - **Authenticated Feed Support** - Works with Azure DevOps, private NuGet feeds, and custom sources
 - **Compare DLL files directly** - No need to package them first
 - Compare all public types (classes, interfaces, enums, structs, delegates)
@@ -21,6 +22,18 @@ A command-line tool for comparing two NuGet packages and performing gap analysis
 
 ```powershell
 dotnet run --project CanonicaLib.PackageComparer -- Newtonsoft.Json/13.0.1 Newtonsoft.Json/13.0.3
+```
+
+### Compare against latest stable version
+
+Use `latest` to automatically resolve to the latest non-prerelease version:
+
+```powershell
+# Compare specific version against latest
+dotnet run --project CanonicaLib.PackageComparer -- Newtonsoft.Json/12.0.0 Newtonsoft.Json/latest
+
+# Compare latest from two different packages
+canonicalib-comparer EntityFramework/latest Microsoft.EntityFrameworkCore/latest
 ```
 
 ### Compare local .nupkg files
@@ -45,6 +58,15 @@ dotnet run --project CanonicaLib.PackageComparer -- MyLibrary.dll Newtonsoft.Jso
 dotnet run --project CanonicaLib.PackageComparer -- package.nupkg assembly.dll
 ```
 
+### Package Identifier Format
+
+When specifying packages from NuGet feeds, use one of these formats:
+
+- `PackageId/Version` - Specific version (e.g., `Newtonsoft.Json/13.0.1`)
+- `PackageId/latest` - Latest stable (non-prerelease) version
+- Path to `.nupkg` file - Local package file
+- Path to `.dll` file - Direct assembly comparison
+
 ### Options
 
 - `-o, --output <path>` - Write report to file instead of console
@@ -62,6 +84,9 @@ dotnet run --project CanonicaLib.PackageComparer -- MyPackage/1.0.0 MyPackage/2.
 
 # JSON output for automation
 dotnet run --project CanonicaLib.PackageComparer -- Package1/1.0 Package2/1.0 -f json -o report.json
+
+# Compare current version against latest stable
+canonicalib-comparer MyPackage/1.5.0 MyPackage/latest -f markdown -o upgrade-analysis.md
 
 # Using custom NuGet source
 dotnet run --project CanonicaLib.PackageComparer -- MyPackage/1.0 MyPackage/2.0 -s https://my-nuget-feed.com/v3/index.json
