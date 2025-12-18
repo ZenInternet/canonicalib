@@ -73,10 +73,17 @@ public class AssemblyAnalyzer
 
         public CustomAssemblyLoadContext(string name, List<string> assemblyPaths) : base(name, isCollectible: true)
         {
-            _assemblyPaths = assemblyPaths.ToDictionary(
-                path => Path.GetFileNameWithoutExtension(path),
-                path => path,
-                StringComparer.OrdinalIgnoreCase);
+            _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            // Build dictionary, handling duplicate assembly names by keeping the first occurrence
+            foreach (var path in assemblyPaths)
+            {
+                var assemblyName = Path.GetFileNameWithoutExtension(path);
+                if (!_assemblyPaths.ContainsKey(assemblyName))
+                {
+                    _assemblyPaths[assemblyName] = path;
+                }
+            }
         }
 
         protected override Assembly? Load(AssemblyName assemblyName)

@@ -288,9 +288,12 @@ public class PackageExtractor
             var dependencyGroups = nuspecReader.GetDependencyGroups();
 
             var downloadedPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var failedDependencies = new List<string>();
 
             foreach (var dependencyGroup in dependencyGroups)
             {
+                Console.WriteLine($"Processing dependency group for {dependencyGroup.TargetFramework}...");
+                
                 foreach (var dependency in dependencyGroup.Packages)
                 {
                     var dependencyKey = $"{dependency.Id}/{dependency.VersionRange.MinVersion}";
@@ -304,6 +307,9 @@ public class PackageExtractor
                         if (versionToDownload == null)
                             continue;
 
+                        bool downloaded = false;
+                        Exception? lastError = null;
+
                         foreach (var source in _packageSources)
                         {
                             try
@@ -315,59 +321,86 @@ public class PackageExtractor
 
                                 var dependencyPackagePath = Path.Combine(dependenciesFolder, $"{dependency.Id}.{versionToDownload}.nupkg");
                                 
+                                bool success;
                                 using (var packageStream = File.Create(dependencyPackagePath))
                                 {
-                                    var success = await resource.CopyNupkgToStreamAsync(
+                                    success = await resource.CopyNupkgToStreamAsync(
                                         dependency.Id,
                                         versionToDownload,
                                         packageStream,
                                         cache,
                                         NullLogger.Instance,
                                         CancellationToken.None);
+                                }
 
-                                    if (success)
+                                if (success)
+                                {
+                                    // Extract dependency DLLs to the lib folder
+                                    using var depStream = File.OpenRead(dependencyPackagePath);
+                                    using var depReader = new PackageArchiveReader(depStream);
+                                    var depFiles = await depReader.GetFilesAsync(CancellationToken.None);
+                                    
+                                    int extractedDllCount = 0;
+                                    foreach (var file in depFiles.Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
                                     {
-                                        // Extract dependency DLLs to the lib folder
-                                        using var depStream = File.OpenRead(dependencyPackagePath);
-                                        using var depReader = new PackageArchiveReader(depStream);
-                                        var depFiles = await depReader.GetFilesAsync(CancellationToken.None);
-                                        
-                                        foreach (var file in depFiles.Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
+                                        var targetPath = Path.Combine(extractPath, file);
+                                        var targetDir = Path.GetDirectoryName(targetPath);
+                                        if (targetDir != null && !Directory.Exists(targetDir))
                                         {
-                                            var targetPath = Path.Combine(extractPath, file);
-                                            var targetDir = Path.GetDirectoryName(targetPath);
-                                            if (targetDir != null && !Directory.Exists(targetDir))
-                                            {
-                                                Directory.CreateDirectory(targetDir);
-                                            }
-
-                                            using var sourceStream = depReader.GetStream(file);
-                                            using var targetStream = File.Create(targetPath);
-                                            await sourceStream.CopyToAsync(targetStream);
+                                            Directory.CreateDirectory(targetDir);
                                         }
 
-                                        downloadedPackages.Add(dependencyKey);
-                                        break;
+                                        using var sourceStream = depReader.GetStream(file);
+                                        using var targetStream = File.Create(targetPath);
+                                        await sourceStream.CopyToAsync(targetStream);
+                                        extractedDllCount++;
                                     }
+
+                                    Console.WriteLine($"  ✓ Downloaded dependency: {dependency.Id} v{versionToDownload} ({extractedDllCount} DLLs)");
+                                    downloadedPackages.Add(dependencyKey);
+                                    downloaded = true;
+                                    break;
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
+                                lastError = ex;
                                 // Try next source
                             }
                         }
+
+                        if (!downloaded)
+                        {
+                            failedDependencies.Add($"{dependency.Id} v{versionToDownload}");
+                            Console.WriteLine($"  ✗ Could not download dependency: {dependency.Id} v{versionToDownload}");
+                            if (lastError != null)
+                            {
+                                Console.WriteLine($"    Last error: {lastError.Message}");
+                            }
+                        }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Skip dependencies that can't be downloaded
+                        failedDependencies.Add($"{dependency.Id}");
+                        Console.WriteLine($"  ✗ Error processing dependency {dependency.Id}: {ex.Message}");
                     }
                 }
+            }
+
+            if (failedDependencies.Any())
+            {
+                Console.WriteLine($"\nWarning: {failedDependencies.Count} dependencies could not be downloaded:");
+                foreach (var dep in failedDependencies)
+                {
+                    Console.WriteLine($"  - {dep}");
+                }
+                Console.WriteLine("Assembly analysis may be incomplete.\n");
             }
         }
         catch (Exception ex)
         {
             // Don't fail the entire operation if dependency download fails
-            Console.WriteLine($"Warning: Could not download some dependencies: {ex.Message}");
+            Console.WriteLine($"Warning: Error during dependency resolution: {ex.Message}");
         }
     }
 
