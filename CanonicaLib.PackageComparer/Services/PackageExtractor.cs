@@ -1,8 +1,8 @@
 using NuGet.Common;
 using NuGet.Configuration;
-
 using NuGet.Credentials;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
@@ -290,101 +290,16 @@ public class PackageExtractor
             var downloadedPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var failedDependencies = new List<string>();
 
-            foreach (var dependencyGroup in dependencyGroups)
+            // Pick the most compatible dependency group (prefer netstandard2.1, then netstandard2.0, then first available)
+            var targetGroup = dependencyGroups
+                .OrderByDescending(g => g.TargetFramework.Framework == ".NETStandard" && g.TargetFramework.Version.Major == 2 && g.TargetFramework.Version.Minor == 1)
+                .ThenByDescending(g => g.TargetFramework.Framework == ".NETStandard" && g.TargetFramework.Version.Major == 2 && g.TargetFramework.Version.Minor == 0)
+                .FirstOrDefault();
+
+            if (targetGroup != null)
             {
-                Console.WriteLine($"Processing dependency group for {dependencyGroup.TargetFramework}...");
-                
-                foreach (var dependency in dependencyGroup.Packages)
-                {
-                    var dependencyKey = $"{dependency.Id}/{dependency.VersionRange.MinVersion}";
-                    if (downloadedPackages.Contains(dependencyKey))
-                        continue;
-
-                    try
-                    {
-                        // Try to download the dependency
-                        var versionToDownload = dependency.VersionRange.MinVersion;
-                        if (versionToDownload == null)
-                            continue;
-
-                        bool downloaded = false;
-                        Exception? lastError = null;
-
-                        foreach (var source in _packageSources)
-                        {
-                            try
-                            {
-                                var packageSourceProvider = new PackageSourceProvider(_settings);
-                                var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
-                                var repository = sourceRepositoryProvider.CreateRepository(source);
-                                var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
-
-                                var dependencyPackagePath = Path.Combine(dependenciesFolder, $"{dependency.Id}.{versionToDownload}.nupkg");
-                                
-                                bool success;
-                                using (var packageStream = File.Create(dependencyPackagePath))
-                                {
-                                    success = await resource.CopyNupkgToStreamAsync(
-                                        dependency.Id,
-                                        versionToDownload,
-                                        packageStream,
-                                        cache,
-                                        NullLogger.Instance,
-                                        CancellationToken.None);
-                                }
-
-                                if (success)
-                                {
-                                    // Extract dependency DLLs to the lib folder
-                                    using var depStream = File.OpenRead(dependencyPackagePath);
-                                    using var depReader = new PackageArchiveReader(depStream);
-                                    var depFiles = await depReader.GetFilesAsync(CancellationToken.None);
-                                    
-                                    int extractedDllCount = 0;
-                                    foreach (var file in depFiles.Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
-                                    {
-                                        var targetPath = Path.Combine(extractPath, file);
-                                        var targetDir = Path.GetDirectoryName(targetPath);
-                                        if (targetDir != null && !Directory.Exists(targetDir))
-                                        {
-                                            Directory.CreateDirectory(targetDir);
-                                        }
-
-                                        using var sourceStream = depReader.GetStream(file);
-                                        using var targetStream = File.Create(targetPath);
-                                        await sourceStream.CopyToAsync(targetStream);
-                                        extractedDllCount++;
-                                    }
-
-                                    Console.WriteLine($"  ✓ Downloaded dependency: {dependency.Id} v{versionToDownload} ({extractedDllCount} DLLs)");
-                                    downloadedPackages.Add(dependencyKey);
-                                    downloaded = true;
-                                    break;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                lastError = ex;
-                                // Try next source
-                            }
-                        }
-
-                        if (!downloaded)
-                        {
-                            failedDependencies.Add($"{dependency.Id} v{versionToDownload}");
-                            Console.WriteLine($"  ✗ Could not download dependency: {dependency.Id} v{versionToDownload}");
-                            if (lastError != null)
-                            {
-                                Console.WriteLine($"    Last error: {lastError.Message}");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        failedDependencies.Add($"{dependency.Id}");
-                        Console.WriteLine($"  ✗ Error processing dependency {dependency.Id}: {ex.Message}");
-                    }
-                }
+                Console.WriteLine($"Processing dependency group for {targetGroup.TargetFramework}...");
+                await DownloadDependencyGroupAsync(targetGroup, dependenciesFolder, extractPath, cache, downloadedPackages, failedDependencies, depth: 0);
             }
 
             if (failedDependencies.Any())
@@ -401,6 +316,148 @@ public class PackageExtractor
         {
             // Don't fail the entire operation if dependency download fails
             Console.WriteLine($"Warning: Error during dependency resolution: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadDependencyGroupAsync(
+        PackageDependencyGroup dependencyGroup,
+        string dependenciesFolder,
+        string extractPath,
+        SourceCacheContext cache,
+        HashSet<string> downloadedPackages,
+        List<string> failedDependencies,
+        int depth)
+    {
+        if (depth > 5) // Prevent infinite recursion
+            return;
+
+        var indent = new string(' ', depth * 2);
+        
+        foreach (var dependency in dependencyGroup.Packages)
+        {
+            var dependencyKey = $"{dependency.Id}/{dependency.VersionRange.MinVersion}";
+            if (downloadedPackages.Contains(dependencyKey))
+                continue;
+
+            try
+            {
+                // Try to download the dependency
+                var versionToDownload = dependency.VersionRange.MinVersion;
+                if (versionToDownload == null)
+                    continue;
+
+                bool downloaded = false;
+                Exception? lastError = null;
+
+                foreach (var source in _packageSources)
+                {
+                    try
+                    {
+                        var packageSourceProvider = new PackageSourceProvider(_settings);
+                        var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+                        var repository = sourceRepositoryProvider.CreateRepository(source);
+                        var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
+
+                        var dependencyPackagePath = Path.Combine(dependenciesFolder, $"{dependency.Id}.{versionToDownload}.nupkg");
+                        
+                        bool success;
+                        using (var packageStream = File.Create(dependencyPackagePath))
+                        {
+                            success = await resource.CopyNupkgToStreamAsync(
+                                dependency.Id,
+                                versionToDownload,
+                                packageStream,
+                                cache,
+                                NullLogger.Instance,
+                                CancellationToken.None);
+                        }
+
+                        if (success)
+                        {
+                            // Extract dependency DLLs to the lib folder
+                            using var depStream = File.OpenRead(dependencyPackagePath);
+                            using var depReader = new PackageArchiveReader(depStream);
+                            var depFiles = await depReader.GetFilesAsync(CancellationToken.None);
+                            
+                            // Get the best matching lib folder for the target framework
+                            var libFiles = depFiles.Where(f => f.StartsWith("lib/", StringComparison.OrdinalIgnoreCase) && f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)).ToList();
+                            
+                            // Prefer netstandard2.1 > netstandard2.0 > first available
+                            var bestFramework = libFiles
+                                .Select(f => f.Split('/')[1])
+                                .Distinct()
+                                .OrderByDescending(fw => fw.Equals("netstandard2.1", StringComparison.OrdinalIgnoreCase))
+                                .ThenByDescending(fw => fw.Equals("netstandard2.0", StringComparison.OrdinalIgnoreCase))
+                                .FirstOrDefault();
+
+                            int extractedDllCount = 0;
+                            if (bestFramework != null)
+                            {
+                                var frameworkFiles = libFiles.Where(f => f.StartsWith($"lib/{bestFramework}/", StringComparison.OrdinalIgnoreCase));
+                                foreach (var file in frameworkFiles)
+                                {
+                                    var targetPath = Path.Combine(extractPath, file);
+                                    var targetDir = Path.GetDirectoryName(targetPath);
+                                    if (targetDir != null && !Directory.Exists(targetDir))
+                                    {
+                                        Directory.CreateDirectory(targetDir);
+                                    }
+
+                                    // Skip if already extracted (from another dependency)
+                                    if (File.Exists(targetPath))
+                                        continue;
+
+                                    using var sourceStream = depReader.GetStream(file);
+                                    using var targetStream = File.Create(targetPath);
+                                    await sourceStream.CopyToAsync(targetStream);
+                                    extractedDllCount++;
+                                }
+                            }
+
+                            Console.WriteLine($"{indent}  ✓ Downloaded dependency: {dependency.Id} v{versionToDownload} ({extractedDllCount} DLLs)");
+                            downloadedPackages.Add(dependencyKey);
+                            downloaded = true;
+
+                            // Recursively download transitive dependencies
+                            var depNuspecReader = await depReader.GetNuspecReaderAsync(CancellationToken.None);
+                            var depDependencyGroups = depNuspecReader.GetDependencyGroups();
+                            var depTargetGroup = depDependencyGroups
+                                .OrderByDescending(g => g.TargetFramework.Framework == ".NETStandard" && g.TargetFramework.Version.Major == 2 && g.TargetFramework.Version.Minor == 1)
+                                .ThenByDescending(g => g.TargetFramework.Framework == ".NETStandard" && g.TargetFramework.Version.Major == 2 && g.TargetFramework.Version.Minor == 0)
+                                .FirstOrDefault();
+
+                            if (depTargetGroup != null && depTargetGroup.Packages.Any())
+                            {
+                                await DownloadDependencyGroupAsync(depTargetGroup, dependenciesFolder, extractPath, cache, downloadedPackages, failedDependencies, depth + 1);
+                            }
+
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        // Try next source
+                    }
+                }
+                
+                if (!downloaded)
+                {
+                    failedDependencies.Add($"{dependency.Id} v{versionToDownload}");
+                    if (depth == 0) // Only log first-level dependency failures
+                    {
+                        Console.WriteLine($"{indent}  ✗ Could not download dependency: {dependency.Id} v{versionToDownload}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                failedDependencies.Add($"{dependency.Id}");
+                if (depth == 0)
+                {
+                    Console.WriteLine($"{indent}  ✗ Error processing dependency {dependency.Id}: {ex.Message}");
+                }
+            }
         }
     }
 
