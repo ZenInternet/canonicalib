@@ -28,7 +28,7 @@ public class AssemblyAnalyzer
         var assemblies = new List<AssemblyInfo>();
         
         // Create a separate AssemblyLoadContext to avoid assembly conflicts
-        var loadContext = new AssemblyLoadContext(contextName, isCollectible: true);
+        var loadContext = new CustomAssemblyLoadContext(contextName, assemblyPaths);
 
         try
         {
@@ -65,6 +65,31 @@ public class AssemblyAnalyzer
         }
 
         return assemblies;
+    }
+    
+    private class CustomAssemblyLoadContext : AssemblyLoadContext
+    {
+        private readonly Dictionary<string, string> _assemblyPaths;
+
+        public CustomAssemblyLoadContext(string name, List<string> assemblyPaths) : base(name, isCollectible: true)
+        {
+            _assemblyPaths = assemblyPaths.ToDictionary(
+                path => Path.GetFileNameWithoutExtension(path),
+                path => path,
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        protected override Assembly? Load(AssemblyName assemblyName)
+        {
+            // Try to load from our list of dependencies
+            if (assemblyName.Name != null && _assemblyPaths.TryGetValue(assemblyName.Name, out var path))
+            {
+                return LoadFromAssemblyPath(path);
+            }
+
+            // Let the default load context handle system assemblies
+            return null;
+        }
     }
 
     private Models.TypeInfo AnalyzeType(Type type)

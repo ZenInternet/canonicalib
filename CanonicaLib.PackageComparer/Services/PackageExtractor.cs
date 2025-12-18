@@ -1,5 +1,6 @@
 using NuGet.Common;
 using NuGet.Configuration;
+
 using NuGet.Credentials;
 using NuGet.Packaging;
 using NuGet.Protocol;
@@ -173,6 +174,9 @@ public class PackageExtractor
             await sourceStream.CopyToAsync(targetStream);
         }
 
+        // Download dependencies
+        await DownloadDependenciesAsync(packageReader, extractPath);
+
         return new PackageInfo
         {
             PackageId = identity.Id,
@@ -260,6 +264,9 @@ public class PackageExtractor
             await sourceStream.CopyToAsync(targetStream);
         }
 
+        // Download dependencies
+        await DownloadDependenciesAsync(packageReader, extractPath);
+
         return new PackageInfo
         {
             PackageId = packageId,
@@ -267,6 +274,101 @@ public class PackageExtractor
             ExtractPath = extractPath,
             AssemblyPaths = GetAssemblyPaths(extractPath)
         };
+    }
+
+    private async Task DownloadDependenciesAsync(PackageArchiveReader packageReader, string extractPath)
+    {
+        try
+        {
+            var dependenciesFolder = Path.Combine(extractPath, "dependencies");
+            Directory.CreateDirectory(dependenciesFolder);
+
+            var cache = new SourceCacheContext();
+            var nuspecReader = await packageReader.GetNuspecReaderAsync(CancellationToken.None);
+            var dependencyGroups = nuspecReader.GetDependencyGroups();
+
+            var downloadedPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var dependencyGroup in dependencyGroups)
+            {
+                foreach (var dependency in dependencyGroup.Packages)
+                {
+                    var dependencyKey = $"{dependency.Id}/{dependency.VersionRange.MinVersion}";
+                    if (downloadedPackages.Contains(dependencyKey))
+                        continue;
+
+                    try
+                    {
+                        // Try to download the dependency
+                        var versionToDownload = dependency.VersionRange.MinVersion;
+                        if (versionToDownload == null)
+                            continue;
+
+                        foreach (var source in _packageSources)
+                        {
+                            try
+                            {
+                                var packageSourceProvider = new PackageSourceProvider(_settings);
+                                var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+                                var repository = sourceRepositoryProvider.CreateRepository(source);
+                                var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
+
+                                var dependencyPackagePath = Path.Combine(dependenciesFolder, $"{dependency.Id}.{versionToDownload}.nupkg");
+                                
+                                using (var packageStream = File.Create(dependencyPackagePath))
+                                {
+                                    var success = await resource.CopyNupkgToStreamAsync(
+                                        dependency.Id,
+                                        versionToDownload,
+                                        packageStream,
+                                        cache,
+                                        NullLogger.Instance,
+                                        CancellationToken.None);
+
+                                    if (success)
+                                    {
+                                        // Extract dependency DLLs to the lib folder
+                                        using var depStream = File.OpenRead(dependencyPackagePath);
+                                        using var depReader = new PackageArchiveReader(depStream);
+                                        var depFiles = await depReader.GetFilesAsync(CancellationToken.None);
+                                        
+                                        foreach (var file in depFiles.Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            var targetPath = Path.Combine(extractPath, file);
+                                            var targetDir = Path.GetDirectoryName(targetPath);
+                                            if (targetDir != null && !Directory.Exists(targetDir))
+                                            {
+                                                Directory.CreateDirectory(targetDir);
+                                            }
+
+                                            using var sourceStream = depReader.GetStream(file);
+                                            using var targetStream = File.Create(targetPath);
+                                            await sourceStream.CopyToAsync(targetStream);
+                                        }
+
+                                        downloadedPackages.Add(dependencyKey);
+                                        break;
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                                // Try next source
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Skip dependencies that can't be downloaded
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the entire operation if dependency download fails
+            Console.WriteLine($"Warning: Could not download some dependencies: {ex.Message}");
+        }
     }
 
     private List<string> GetAssemblyPaths(string extractPath)
