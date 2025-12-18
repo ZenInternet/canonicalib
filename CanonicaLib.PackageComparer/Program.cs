@@ -59,6 +59,11 @@ public class Program
             getDefaultValue: () => null);
         migrationGuideOption.AddAlias("-m");
 
+        var modelOption = new Option<string>(
+            name: "--model",
+            description: "OpenAI model to use for migration guide generation (e.g., gpt-4o, gpt-4o-mini, gpt-4-turbo)",
+            getDefaultValue: () => "gpt-4o");
+
         var rootCommand = new RootCommand("CanonicaLib Package Comparer - Compare functionality between two NuGet packages")
         {
             package1Argument,
@@ -68,11 +73,22 @@ public class Program
             verboseOption,
             sourceOption,
             apiKeyOption,
-            migrationGuideOption
+            migrationGuideOption,
+            modelOption
         };
 
-        rootCommand.SetHandler(async (package1, package2, output, format, verbose, source, apiKey, migrationGuidePath) =>
+        rootCommand.SetHandler(async (context) =>
         {
+            var package1 = context.ParseResult.GetValueForArgument(package1Argument);
+            var package2 = context.ParseResult.GetValueForArgument(package2Argument);
+            var output = context.ParseResult.GetValueForOption(outputOption);
+            var format = context.ParseResult.GetValueForOption(formatOption);
+            var verbose = context.ParseResult.GetValueForOption(verboseOption);
+            var source = context.ParseResult.GetValueForOption(sourceOption);
+            var apiKey = context.ParseResult.GetValueForOption(apiKeyOption);
+            var migrationGuidePath = context.ParseResult.GetValueForOption(migrationGuideOption);
+            var model = context.ParseResult.GetValueForOption(modelOption);
+
             int exitCode = 0;
             try
             {
@@ -86,11 +102,14 @@ public class Program
                 Console.WriteLine("Extracting second package...");
                 var package2Info = await extractor.ExtractPackageAsync(package2);
 
+                Console.WriteLine("Selecting target framework...");
+                extractor.SelectTargetFramework(package1Info, package2Info);
+
                 Console.WriteLine("Analyzing assemblies...");
                 var comparison = analyzer.ComparePackages(package1Info, package2Info);
 
                 Console.WriteLine("Generating report...");
-                var report = reporter.GenerateReport(comparison, format, verbose);
+                var report = reporter.GenerateReport(comparison, format ?? "text", verbose);
 
                 if (output != null)
                 {
@@ -126,11 +145,11 @@ public class Program
                     {
 
                     Console.WriteLine();
-                    Console.WriteLine("Generating AI-powered migration guide...");
+                    Console.WriteLine($"Generating AI-powered migration guide using {model ?? "gpt-4o"}...");
                     
                     try
                     {
-                        var migrationGenerator = new MigrationGuideGenerator(resolvedApiKey);
+                        var migrationGenerator = new MigrationGuideGenerator(resolvedApiKey, model ?? "gpt-4o");
                         var detailedReport = reporter.GenerateReport(comparison, "markdown", verbose: true);
                         var migrationGuide = await migrationGenerator.GenerateMigrationGuideAsync(comparison, detailedReport);
 
@@ -178,7 +197,7 @@ public class Program
             }
 
             Environment.ExitCode = exitCode;
-        }, package1Argument, package2Argument, outputOption, formatOption, verboseOption, sourceOption, apiKeyOption, migrationGuideOption);
+        });
 
         return await rootCommand.InvokeAsync(args);
     }

@@ -8,8 +8,8 @@ public class AssemblyAnalyzer
 {
     public AssemblyComparison ComparePackages(PackageInfo package1, PackageInfo package2)
     {
-        var package1Assemblies = AnalyzeAssemblies(package1.AssemblyPaths, "Package1");
-        var package2Assemblies = AnalyzeAssemblies(package2.AssemblyPaths, "Package2");
+        var package1Assemblies = AnalyzeAssemblies(package1.AssemblyPaths, package1.DependencyPaths ?? new List<string>(), "Package1Context");
+        var package2Assemblies = AnalyzeAssemblies(package2.AssemblyPaths, package2.DependencyPaths ?? new List<string>(), "Package2Context");
 
         var typeComparisons = CompareTypes(package1Assemblies, package2Assemblies);
 
@@ -23,15 +23,18 @@ public class AssemblyAnalyzer
         };
     }
 
-    private List<AssemblyInfo> AnalyzeAssemblies(List<string> assemblyPaths, string contextName)
+    private List<AssemblyInfo> AnalyzeAssemblies(List<string> assemblyPaths, List<string> dependencyPaths, string contextName)
     {
         var assemblies = new List<AssemblyInfo>();
         
-        // Create a separate AssemblyLoadContext to avoid assembly conflicts
-        var loadContext = new AssemblyLoadContext(contextName, isCollectible: true);
+        // Create load context with both main assemblies and dependencies for resolution
+        var allPaths = new List<string>(assemblyPaths);
+        allPaths.AddRange(dependencyPaths);
+        var loadContext = new CustomAssemblyLoadContext(contextName, allPaths);
 
         try
         {
+            // Only analyze the main package assemblies, not dependencies
             foreach (var assemblyPath in assemblyPaths)
             {
                 try
@@ -65,6 +68,38 @@ public class AssemblyAnalyzer
         }
 
         return assemblies;
+    }
+    
+    private class CustomAssemblyLoadContext : AssemblyLoadContext
+    {
+        private readonly Dictionary<string, string> _assemblyPaths;
+
+        public CustomAssemblyLoadContext(string name, List<string> assemblyPaths) : base(name, isCollectible: true)
+        {
+            _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            // Build dictionary, handling duplicate assembly names by keeping the first occurrence
+            foreach (var path in assemblyPaths)
+            {
+                var assemblyName = Path.GetFileNameWithoutExtension(path);
+                if (!_assemblyPaths.ContainsKey(assemblyName))
+                {
+                    _assemblyPaths[assemblyName] = path;
+                }
+            }
+        }
+
+        protected override Assembly? Load(AssemblyName assemblyName)
+        {
+            // Try to load from our list of dependencies
+            if (assemblyName.Name != null && _assemblyPaths.TryGetValue(assemblyName.Name, out var path))
+            {
+                return LoadFromAssemblyPath(path);
+            }
+
+            // Let the default load context handle system assemblies
+            return null;
+        }
     }
 
     private Models.TypeInfo AnalyzeType(Type type)
