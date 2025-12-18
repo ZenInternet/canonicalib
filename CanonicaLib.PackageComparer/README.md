@@ -5,6 +5,7 @@ A command-line tool for comparing two NuGet packages and performing gap analysis
 ## Features
 
 - Download and extract NuGet packages from NuGet.org or use local .nupkg files
+- **Authenticated Feed Support** - Works with Azure DevOps, private NuGet feeds, and custom sources
 - **Compare DLL files directly** - No need to package them first
 - Compare all public types (classes, interfaces, enums, structs, delegates)
 - Detect added, removed, and modified members
@@ -64,6 +65,10 @@ dotnet run --project CanonicaLib.PackageComparer -- Package1/1.0 Package2/1.0 -f
 
 # Using custom NuGet source
 dotnet run --project CanonicaLib.PackageComparer -- MyPackage/1.0 MyPackage/2.0 -s https://my-nuget-feed.com/v3/index.json
+
+# Using authenticated feeds (Azure DevOps, private feeds)
+# The tool automatically uses credentials from nuget.config - see AUTHENTICATED-FEEDS.md for details
+canonicalib-comparer MyPrivatePackage/1.0 MyPrivatePackage/2.0
 
 # Generate AI-powered migration guide
 dotnet run --project CanonicaLib.PackageComparer -- OldPackage/1.0 NewPackage/2.0 -k YOUR_OPENAI_API_KEY -m migration-guide
