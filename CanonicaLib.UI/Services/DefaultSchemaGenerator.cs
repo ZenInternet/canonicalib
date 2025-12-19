@@ -146,6 +146,10 @@ namespace Zen.CanonicaLib.UI.Services
             schema.Comment = type.GetXmlDocsRemarks() ?? null;
             schema.Properties = new Dictionary<string, IOpenApiSchema>();
 
+            // Add the schema to context BEFORE processing properties to prevent infinite recursion
+            // when a type references itself (e.g., Entity with Children property of type Entity[])
+            var schemaAddedEarly = generatorContext.AddSchema(type, schema, referenceType);
+
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var requiredProperties = new HashSet<string>();
 
@@ -169,6 +173,15 @@ namespace Zen.CanonicaLib.UI.Services
             if (requiredProperties.Count > 0)
             {
                 schema.Required = requiredProperties;
+            }
+
+            // If the schema was added early to prevent recursion, return a reference
+            // Otherwise, check if it should be added now
+            if (schemaAddedEarly)
+            {
+                var schemaKey = GetSchemaKey(type);
+                _logger.LogInformation("Type {TypeName} schema was added early to prevent recursion. Creating schema reference {schemaKey}.", type.FullName, schemaKey);
+                return new OpenApiSchemaReference(schemaKey);
             }
 
             if (generatorContext.AddSchema(type, schema, referenceType))
