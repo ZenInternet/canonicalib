@@ -92,7 +92,7 @@ namespace Zen.CanonicaLib.UI.Services
             }
 
             //Handle Object Types
-            if (IsObjectType(type))
+            if (IsDictionary(type))
             {
                 _logger.LogInformation("Type {TypeName} is treated as an object type. Creating object schema.", type.FullName);
                 schema.Type = JsonSchemaType.Object;
@@ -221,18 +221,19 @@ namespace Zen.CanonicaLib.UI.Services
         //    return schema;
         //}
 
-        private static bool IsObjectType(Type type)
+        private static bool IsDictionary(Type type)
         {
-            var objectTypes = new[]
+            // Check if type is Dictionary<,> or IDictionary<,>
+            if (type.IsGenericType)
             {
-                "IDictionary`1",
-                "IDictionary`2"
-            };
+                var genericDef = type.GetGenericTypeDefinition();
+                if (genericDef == typeof(Dictionary<,>) || genericDef == typeof(IDictionary<,>))
+                    return true;
+            }
 
-            if (objectTypes.Contains(type.Name))
-                return true;
-
-            return false;
+            // Check if type implements IDictionary<,> through inheritance
+            return type.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
         }
 
         private static bool IsNullableType(Type type)
@@ -287,35 +288,45 @@ namespace Zen.CanonicaLib.UI.Services
 
         private static bool IsArrayOrCollection(Type type)
         {
-            //TODO - this should also check base type recursively to see if it's an array
-            if (type.IsArray ||
-                  (type.IsGenericType &&
-                    (type.GetGenericTypeDefinition() == typeof(List<>) ||
-                     type.GetGenericTypeDefinition() == typeof(IList<>) ||
-                     type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
-                     type.GetGenericTypeDefinition() == typeof(Collection<>) ||
-                     type.GetGenericTypeDefinition() == typeof(IEnumerable<>))))
-            {
+            // Check if it's an array
+            if (type.IsArray)
                 return true;
-            } else if (type.BaseType != null)
-            {
-                return IsArrayOrCollection(type.BaseType);
-            }
-            return false;
+
+            // Check if the type itself is a generic IEnumerable<> (for interface types like IList<string>)
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                return true;
+
+            // Use GetInterfaces() to detect ALL collection types including custom classes inheriting from List<T>, Collection<T>, etc.
+            // GetInterfaces() automatically traverses the inheritance hierarchy
+            return type.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
         }
 
         private static Type? GetElementType(Type type)
         {
+            // Handle arrays
             if (type.IsArray)
             {
                 return type.GetElementType();
             }
 
-            if (type.GetGenericArguments().Length > 0)
+            // For non-array types, find the IEnumerable<T> interface and extract T
+            // This correctly handles CustomList : List<string> where GetGenericArguments() on the type itself may not return the element type
+            var enumerableInterface = type.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+            if (enumerableInterface != null)
+            {
+                return enumerableInterface.GetGenericArguments().FirstOrDefault();
+            }
+
+            // Fallback: if the type itself is a generic type, try to get the first generic argument
+            if (type.IsGenericType && type.GetGenericArguments().Length > 0)
             {
                 return type.GetGenericArguments().FirstOrDefault();
             }
 
+            // Fallback: recurse into base type
             if (type.BaseType != null)
             {
                 return GetElementType(type.BaseType);
