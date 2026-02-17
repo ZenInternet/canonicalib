@@ -91,11 +91,52 @@ namespace Zen.CanonicaLib.UI.Services
                 return schema;
             }
 
-            //Handle Object Types
+            // Handle Dictionary types
             if (IsDictionary(type))
             {
-                _logger.LogInformation("Type {TypeName} is treated as an object type. Creating object schema.", type.FullName);
+                _logger.LogInformation("Type {TypeName} is a dictionary. Creating object schema with additionalProperties.", type.FullName);
                 schema.Type = JsonSchemaType.Object;
+
+                // Find the IDictionary<,> interface to extract key and value types
+                var dictionaryInterface = type.GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+                Type? valueType = null;
+                Type? keyType = null;
+
+                if (dictionaryInterface != null)
+                {
+                    var genericArgs = dictionaryInterface.GetGenericArguments();
+                    keyType = genericArgs[0];
+                    valueType = genericArgs[1];
+                }
+                else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                    var genericArgs = type.GetGenericArguments();
+                    keyType = genericArgs[0];
+                    valueType = genericArgs[1];
+                }
+
+                // Log warning if key type is not string
+                if (keyType != null && keyType != typeof(string))
+                {
+                    _logger.LogWarning("Dictionary key type {KeyType} is not string. OpenAPI only supports string keys.", keyType.FullName);
+                }
+
+                // Set additionalProperties for the value type
+                if (valueType != null)
+                {
+                    var valueReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, valueType);
+                    schema.AdditionalProperties = CreateSchemaFromType(valueType, valueReferenceType, generatorContext);
+                }
+
+                // Try to add schema to context (for internal/external dictionaries)
+                if (generatorContext.AddSchema(type, schema, referenceType))
+                {
+                    var schemaKey = GetSchemaKey(type);
+                    return new OpenApiSchemaReference(schemaKey);
+                }
+
                 return schema;
             }
 
@@ -105,11 +146,23 @@ namespace Zen.CanonicaLib.UI.Services
                 schema.Type = JsonSchemaType.Array;
                 var elementType = GetElementType(type);
                 _logger.LogInformation("Type {TypeName} is an array or collection of {elementType}. Creating array schema.", type.FullName, elementType?.FullName);
+
+                // Add schema early to prevent infinite recursion when element type is self-referencing
+                var arraySchemaAddedEarly = generatorContext.AddSchema(type, schema, referenceType);
+
                 if (elementType != null)
                 {
-                    schema.Items = CreateSchemaFromType(elementType, referenceType, generatorContext);
-
+                    var elementReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, elementType);
+                    schema.Items = CreateSchemaFromType(elementType, elementReferenceType, generatorContext);
                 }
+
+                // If schema was added early, return a reference
+                if (arraySchemaAddedEarly)
+                {
+                    var schemaKey = GetSchemaKey(type);
+                    return new OpenApiSchemaReference(schemaKey);
+                }
+
                 return schema;
             }
 
@@ -192,34 +245,6 @@ namespace Zen.CanonicaLib.UI.Services
             }
             return schema;
         }
-
-        //private IOpenApiSchema CreateSchemaOrReference(Type type, AssemblyReferenceType referenceType, GeneratorContext generatorContext)
-        //{
-        //    // Handle nullable types
-        //    if (IsNullableType(type))
-        //    {
-        //        type = Nullable.GetUnderlyingType(type) ?? type;
-        //        referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, type);
-        //    }
-
-        //    // For primitive types, create schema directly
-        //    if (IsPrimitiveType(type))
-        //    {
-        //        var primitiveSchema =  CreateSchemaFromType(type, referenceType, generatorContext);
-        //    }
-
-        //    // If it's not in our existing schemas but is in the target assembly, create schema directly
-        //    var schema = CreateSchemaFromType(type, referenceType, generatorContext);
-        //    generatorContext.AddSchema(type, schema, referenceType);
-
-        //    if (referenceType == AssemblyReferenceType.External || referenceType == AssemblyReferenceType.Internal)
-        //    {
-        //        var typeKey = GetSchemaKey(type);
-        //        return new OpenApiSchemaReference(typeKey);
-        //    }
-
-        //    return schema;
-        //}
 
         private static bool IsDictionary(Type type)
         {
