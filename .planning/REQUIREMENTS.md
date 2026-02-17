@@ -53,8 +53,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 1 | Pending |
-| BUG-04 | Phase 1 | Pending |
+| BUG-01 | Phase 1 | Complete |
+| BUG-04 | Phase 1 | Complete |
 | TEST-01 | Phase 2 | Pending |
 | TEST-02 | Phase 2 | Pending |
 | TEST-03 | Phase 2 | Pending |

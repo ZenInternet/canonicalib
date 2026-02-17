@@ -12,7 +12,7 @@ A five-phase robustness pass that fixes all known bugs in schema generation, Pac
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Schema Generation Core Fixes** - Fix infinite recursion and incomplete array detection
+- [x] **Phase 1: Schema Generation Core Fixes** - Fix infinite recursion and incomplete array detection
 - [ ] **Phase 2: Schema Generation Testing** - Comprehensive unit tests for all type patterns
 - [ ] **Phase 3: PackageComparer Reliability** - Fix thread safety and disposal issues
 - [ ] **Phase 4: Discovery & Handler Fixes** - Complete slug conversion and tag group discovery
@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix infinite recursion (early schema registration) and collection/dictionary type detection
+- [x] 01-01-PLAN.md — Fix infinite recursion (early schema registration) and collection/dictionary type detection
 
 ### Phase 2: Schema Generation Testing
 **Goal**: Comprehensive unit test coverage validates schema generation correctness across all type patterns and edge cases
@@ -97,7 +97,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema Generation Core Fixes | 0/1 | Planned | - |
+| 1. Schema Generation Core Fixes | 1/1 | ✓ Complete | 2026-02-17 |
 | 2. Schema Generation Testing | 0/0 | Not started | - |
 | 3. PackageComparer Reliability | 0/0 | Not started | - |
 | 4. Discovery & Handler Fixes | 0/0 | Not started | - |
