@@ -28,10 +28,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Schema generation completes successfully for self-referencing models (tree structures with Parent/Children properties) without stack overflow
   2. All collection and array types (including custom IEnumerable implementations) are correctly detected and rendered as array schemas
   3. Schema generator recursively checks base types when determining collection status, catching all IEnumerable derivatives
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD
+- [ ] 01-01-PLAN.md — Fix infinite recursion (early schema registration) and collection/dictionary type detection
 
 ### Phase 2: Schema Generation Testing
 **Goal**: Comprehensive unit test coverage validates schema generation correctness across all type patterns and edge cases
@@ -97,7 +97,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema Generation Core Fixes | 0/0 | Not started | - |
+| 1. Schema Generation Core Fixes | 0/1 | Planned | - |
 | 2. Schema Generation Testing | 0/0 | Not started | - |
 | 3. PackageComparer Reliability | 0/0 | Not started | - |
 | 4. Discovery & Handler Fixes | 0/0 | Not started | - |
