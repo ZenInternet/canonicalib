@@ -141,26 +141,18 @@ namespace Zen.CanonicaLib.UI.Services
             }
 
             // Handle arrays and collections
+            // Array schemas are always inline, not registered as top-level components.
+            // Recursion prevention is handled by the element type being registered early.
             if (IsArrayOrCollection(type))
             {
                 schema.Type = JsonSchemaType.Array;
                 var elementType = GetElementType(type);
                 _logger.LogInformation("Type {TypeName} is an array or collection of {elementType}. Creating array schema.", type.FullName, elementType?.FullName);
 
-                // Add schema early to prevent infinite recursion when element type is self-referencing
-                var arraySchemaAddedEarly = generatorContext.AddSchema(type, schema, referenceType);
-
                 if (elementType != null)
                 {
                     var elementReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, elementType);
                     schema.Items = CreateSchemaFromType(elementType, elementReferenceType, generatorContext);
-                }
-
-                // If schema was added early, return a reference
-                if (arraySchemaAddedEarly)
-                {
-                    var schemaKey = GetSchemaKey(type);
-                    return new OpenApiSchemaReference(schemaKey);
                 }
 
                 return schema;
