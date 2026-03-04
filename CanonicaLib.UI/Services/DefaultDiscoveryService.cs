@@ -59,28 +59,50 @@ namespace Zen.CanonicaLib.UI.Services
 
         public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition)
         {
-            var methods = controllerDefinition.GetMethods()
-                .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
-                .ToList();
-
-            // Also search parent interfaces — interface inheritance doesn't
-            // surface attributes via inherit:true, so we walk the tree manually.
-            // Skip methods already found on the declaring type to avoid duplicates.
-            var knownNames = new HashSet<string>(methods.Select(m => m.Name));
+            // Collect endpoint methods from parent interfaces first.
+            var parentEndpoints = new Dictionary<string, MethodInfo>();
             foreach (var parentInterface in controllerDefinition.GetInterfaces())
             {
                 foreach (var method in parentInterface.GetMethods())
                 {
-                    if (!knownNames.Contains(method.Name) &&
-                        method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
+                    if (method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
                     {
-                        methods.Add(method);
-                        knownNames.Add(method.Name);
+                        parentEndpoints.TryAdd(method.Name, method);
                     }
                 }
             }
 
-            return methods;
+            var result = new List<MethodInfo>();
+            var seen = new HashSet<string>();
+
+            foreach (var method in controllerDefinition.GetMethods())
+            {
+                if (method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
+                {
+                    // Method has [OpenApiEndpoint] directly — use it.
+                    result.Add(method);
+                    seen.Add(method.Name);
+                }
+                else if (parentEndpoints.ContainsKey(method.Name))
+                {
+                    // Child hides a parent endpoint (e.g. with 'new') to add
+                    // parameter-level attributes like [Example]. Prefer the
+                    // child's MethodInfo so parameter attributes are visible.
+                    result.Add(method);
+                    seen.Add(method.Name);
+                }
+            }
+
+            // Add any parent endpoints not shadowed by the child.
+            foreach (var kvp in parentEndpoints)
+            {
+                if (!seen.Contains(kvp.Key))
+                {
+                    result.Add(kvp.Value);
+                }
+            }
+
+            return result;
         }
 
         private readonly HashSet<string> excludedInterfaces = new HashSet<string>
