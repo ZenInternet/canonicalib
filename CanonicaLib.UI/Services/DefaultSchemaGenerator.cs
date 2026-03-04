@@ -5,6 +5,7 @@ using Namotion.Reflection;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.OpenApiExtensions;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
@@ -166,7 +167,7 @@ namespace Zen.CanonicaLib.UI.Services
                 schema.Type = JsonSchemaType.String;
                 schema.Title = type.Name;
                 schema.Description = type.GetXmlDocsSummary() ?? null;
-                schema.Comment = type.GetXmlDocsRemarks() ?? null;
+                schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
                 schema.Enum = new List<System.Text.Json.Nodes.JsonNode>();
                 foreach (var enumValue in Enum.GetValues(type))
                 {
@@ -188,7 +189,7 @@ namespace Zen.CanonicaLib.UI.Services
             schema.Type = JsonSchemaType.Object;
             schema.Title = type.Name;
             schema.Description = type.GetXmlDocsSummary() ?? null;
-            schema.Comment = type.GetXmlDocsRemarks() ?? null;
+            schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
             schema.Properties = new Dictionary<string, IOpenApiSchema>();
 
             // Add the schema to context BEFORE processing properties to prevent infinite recursion

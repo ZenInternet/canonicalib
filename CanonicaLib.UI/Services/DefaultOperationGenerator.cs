@@ -40,7 +40,7 @@ namespace Zen.CanonicaLib.UI.Services
                 OperationId = $"{endpointDefinition.DeclaringType!.Name.Replace("I", "").Replace("Controller", "")}_{endpointDefinition.Name}",
                 Tags = tags,
                 Summary = endpointDefinition.GetXmlDocsSummary().IfEmpty(endpointDefinition.Name),
-                Description = endpointDefinition.GetXmlDocsRemarks().IfEmpty(null),
+                Description = (endpointDefinition.GetXmlDocsRemarksPreservingLineBreaks() ?? string.Empty).IfEmpty(null),
                 RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
                 Parameters = ParametersGenerator.GenerateParameters(endpointDefinition, generatorContext),
                 Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext),

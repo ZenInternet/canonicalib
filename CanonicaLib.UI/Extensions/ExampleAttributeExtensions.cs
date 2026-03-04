@@ -42,7 +42,7 @@ namespace Zen.CanonicaLib.UI.Extensions
 
         public static string GetDescription(this ExampleAttribute exampleAttribute)
         {
-            var remarks = exampleAttribute.ExampleType.GetXmlDocsRemarks();
+            var remarks = exampleAttribute.ExampleType.GetXmlDocsRemarksPreservingLineBreaks();
             return remarks ?? string.Empty;
         }
 
