@@ -268,7 +268,14 @@ namespace Zen.CanonicaLib.UI.Services
         public ISet<OpenApiTag> FindWebhookTags(Assembly assembly)
         {
             var tagAttributes = FindWebhookDefinitions(assembly)
-                  .Select(wd => new { TagAttribute = wd.GetCustomAttribute<OpenApiTagAttribute>(), Summary = wd.GetXmlDocsSummary() })
+                  .Select(wd => new
+                  {
+                      TagAttribute = wd.GetCustomAttribute<OpenApiTagAttribute>()
+                          ?? wd.GetInterfaces()
+                              .Select(i => i.GetCustomAttribute<OpenApiTagAttribute>())
+                              .FirstOrDefault(a => a != null),
+                      Summary = wd.GetXmlDocsSummary()
+                  })
                   .Where(tag => tag.TagAttribute != null)
                   .ToList();
 

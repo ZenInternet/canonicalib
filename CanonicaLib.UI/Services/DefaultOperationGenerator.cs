@@ -28,7 +28,10 @@ namespace Zen.CanonicaLib.UI.Services
 
         public OpenApiOperation GenerateOperation(MethodInfo endpointDefinition, GeneratorContext generatorContext)
         {
-            var tagAttribute = endpointDefinition.DeclaringType!.GetCustomAttribute<OpenApiTagAttribute>();
+            var tagAttribute = endpointDefinition.DeclaringType!.GetCustomAttribute<OpenApiTagAttribute>()
+                ?? endpointDefinition.DeclaringType!.GetInterfaces()
+                    .Select(i => i.GetCustomAttribute<OpenApiTagAttribute>())
+                    .FirstOrDefault(a => a != null);
 
             var tags = tagAttribute != null ? new HashSet<OpenApiTagReference>()
             {
