@@ -2,7 +2,6 @@
 using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
-using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
@@ -88,7 +87,7 @@ namespace Zen.CanonicaLib.UI.Services
             OpenApiPaths paths, 
             GeneratorContext generatorContext)
         {
-            var endpointAttribute = endpointDefinition.GetEndpointAttribute();
+            var endpointAttribute = endpointDefinition.GetCustomAttribute<OpenApiEndpointAttribute>();
             if (endpointAttribute == null)
             {
                 _logger.LogWarning("Endpoint {EndpointName} missing OpenApiEndpointAttribute", endpointDefinition.Name);
