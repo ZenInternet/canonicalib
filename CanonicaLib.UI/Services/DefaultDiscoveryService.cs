@@ -57,9 +57,31 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(OpenApiWebhookAttribute), inherit: false).Any())
                 .ToList();
 
-        public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition) => controllerDefinition.GetMethods()
+        public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition)
+        {
+            var methods = controllerDefinition.GetMethods()
                 .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
                 .ToList();
+
+            // Also search parent interfaces — interface inheritance doesn't
+            // surface attributes via inherit:true, so we walk the tree manually.
+            // Skip methods already found on the declaring type to avoid duplicates.
+            var knownNames = new HashSet<string>(methods.Select(m => m.Name));
+            foreach (var parentInterface in controllerDefinition.GetInterfaces())
+            {
+                foreach (var method in parentInterface.GetMethods())
+                {
+                    if (!knownNames.Contains(method.Name) &&
+                        method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
+                    {
+                        methods.Add(method);
+                        knownNames.Add(method.Name);
+                    }
+                }
+            }
+
+            return methods;
+        }
 
         private readonly HashSet<string> excludedInterfaces = new HashSet<string>
             {
