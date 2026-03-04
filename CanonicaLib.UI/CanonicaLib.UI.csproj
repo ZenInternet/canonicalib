@@ -64,4 +64,8 @@
 	  <ProjectReference Include="..\CanonicaLib.DataAnnotations\CanonicaLib.DataAnnotations.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="CanonicaLib.UI.Tests" />
+	</ItemGroup>
+
 </Project>

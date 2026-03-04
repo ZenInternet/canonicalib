@@ -5,6 +5,7 @@ using Namotion.Reflection;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.OpenApiExtensions;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
@@ -91,25 +92,70 @@ namespace Zen.CanonicaLib.UI.Services
                 return schema;
             }
 
-            //Handle Object Types
-            if (IsObjectType(type))
+            // Handle Dictionary types
+            if (IsDictionary(type))
             {
-                _logger.LogInformation("Type {TypeName} is treated as an object type. Creating object schema.", type.FullName);
+                _logger.LogInformation("Type {TypeName} is a dictionary. Creating object schema with additionalProperties.", type.FullName);
                 schema.Type = JsonSchemaType.Object;
+
+                // Find the IDictionary<,> interface to extract key and value types
+                var dictionaryInterface = type.GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+                Type? valueType = null;
+                Type? keyType = null;
+
+                if (dictionaryInterface != null)
+                {
+                    var genericArgs = dictionaryInterface.GetGenericArguments();
+                    keyType = genericArgs[0];
+                    valueType = genericArgs[1];
+                }
+                else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                    var genericArgs = type.GetGenericArguments();
+                    keyType = genericArgs[0];
+                    valueType = genericArgs[1];
+                }
+
+                // Log warning if key type is not string
+                if (keyType != null && keyType != typeof(string))
+                {
+                    _logger.LogWarning("Dictionary key type {KeyType} is not string. OpenAPI only supports string keys.", keyType.FullName);
+                }
+
+                // Set additionalProperties for the value type
+                if (valueType != null)
+                {
+                    var valueReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, valueType);
+                    schema.AdditionalProperties = CreateSchemaFromType(valueType, valueReferenceType, generatorContext);
+                }
+
+                // Try to add schema to context (for internal/external dictionaries)
+                if (generatorContext.AddSchema(type, schema, referenceType))
+                {
+                    var schemaKey = GetSchemaKey(type);
+                    return new OpenApiSchemaReference(schemaKey);
+                }
+
                 return schema;
             }
 
             // Handle arrays and collections
+            // Array schemas are always inline, not registered as top-level components.
+            // Recursion prevention is handled by the element type being registered early.
             if (IsArrayOrCollection(type))
             {
                 schema.Type = JsonSchemaType.Array;
                 var elementType = GetElementType(type);
                 _logger.LogInformation("Type {TypeName} is an array or collection of {elementType}. Creating array schema.", type.FullName, elementType?.FullName);
+
                 if (elementType != null)
                 {
-                    schema.Items = CreateSchemaFromType(elementType, referenceType, generatorContext);
-
+                    var elementReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, elementType);
+                    schema.Items = CreateSchemaFromType(elementType, elementReferenceType, generatorContext);
                 }
+
                 return schema;
             }
 
@@ -121,7 +167,7 @@ namespace Zen.CanonicaLib.UI.Services
                 schema.Type = JsonSchemaType.String;
                 schema.Title = type.Name;
                 schema.Description = type.GetXmlDocsSummary() ?? null;
-                schema.Comment = type.GetXmlDocsRemarks() ?? null;
+                schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
                 schema.Enum = new List<System.Text.Json.Nodes.JsonNode>();
                 foreach (var enumValue in Enum.GetValues(type))
                 {
@@ -143,7 +189,7 @@ namespace Zen.CanonicaLib.UI.Services
             schema.Type = JsonSchemaType.Object;
             schema.Title = type.Name;
             schema.Description = type.GetXmlDocsSummary() ?? null;
-            schema.Comment = type.GetXmlDocsRemarks() ?? null;
+            schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
             schema.Properties = new Dictionary<string, IOpenApiSchema>();
 
             // Add the schema to context BEFORE processing properties to prevent infinite recursion
@@ -193,46 +239,19 @@ namespace Zen.CanonicaLib.UI.Services
             return schema;
         }
 
-        //private IOpenApiSchema CreateSchemaOrReference(Type type, AssemblyReferenceType referenceType, GeneratorContext generatorContext)
-        //{
-        //    // Handle nullable types
-        //    if (IsNullableType(type))
-        //    {
-        //        type = Nullable.GetUnderlyingType(type) ?? type;
-        //        referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, type);
-        //    }
-
-        //    // For primitive types, create schema directly
-        //    if (IsPrimitiveType(type))
-        //    {
-        //        var primitiveSchema =  CreateSchemaFromType(type, referenceType, generatorContext);
-        //    }
-
-        //    // If it's not in our existing schemas but is in the target assembly, create schema directly
-        //    var schema = CreateSchemaFromType(type, referenceType, generatorContext);
-        //    generatorContext.AddSchema(type, schema, referenceType);
-
-        //    if (referenceType == AssemblyReferenceType.External || referenceType == AssemblyReferenceType.Internal)
-        //    {
-        //        var typeKey = GetSchemaKey(type);
-        //        return new OpenApiSchemaReference(typeKey);
-        //    }
-
-        //    return schema;
-        //}
-
-        private static bool IsObjectType(Type type)
+        private static bool IsDictionary(Type type)
         {
-            var objectTypes = new[]
+            // Check if type is Dictionary<,> or IDictionary<,>
+            if (type.IsGenericType)
             {
-                "IDictionary`1",
-                "IDictionary`2"
-            };
+                var genericDef = type.GetGenericTypeDefinition();
+                if (genericDef == typeof(Dictionary<,>) || genericDef == typeof(IDictionary<,>))
+                    return true;
+            }
 
-            if (objectTypes.Contains(type.Name))
-                return true;
-
-            return false;
+            // Check if type implements IDictionary<,> through inheritance
+            return type.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
         }
 
         private static bool IsNullableType(Type type)
@@ -287,35 +306,45 @@ namespace Zen.CanonicaLib.UI.Services
 
         private static bool IsArrayOrCollection(Type type)
         {
-            //TODO - this should also check base type recursively to see if it's an array
-            if (type.IsArray ||
-                  (type.IsGenericType &&
-                    (type.GetGenericTypeDefinition() == typeof(List<>) ||
-                     type.GetGenericTypeDefinition() == typeof(IList<>) ||
-                     type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
-                     type.GetGenericTypeDefinition() == typeof(Collection<>) ||
-                     type.GetGenericTypeDefinition() == typeof(IEnumerable<>))))
-            {
+            // Check if it's an array
+            if (type.IsArray)
                 return true;
-            } else if (type.BaseType != null)
-            {
-                return IsArrayOrCollection(type.BaseType);
-            }
-            return false;
+
+            // Check if the type itself is a generic IEnumerable<> (for interface types like IList<string>)
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                return true;
+
+            // Use GetInterfaces() to detect ALL collection types including custom classes inheriting from List<T>, Collection<T>, etc.
+            // GetInterfaces() automatically traverses the inheritance hierarchy
+            return type.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
         }
 
         private static Type? GetElementType(Type type)
         {
+            // Handle arrays
             if (type.IsArray)
             {
                 return type.GetElementType();
             }
 
-            if (type.GetGenericArguments().Length > 0)
+            // For non-array types, find the IEnumerable<T> interface and extract T
+            // This correctly handles CustomList : List<string> where GetGenericArguments() on the type itself may not return the element type
+            var enumerableInterface = type.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+            if (enumerableInterface != null)
+            {
+                return enumerableInterface.GetGenericArguments().FirstOrDefault();
+            }
+
+            // Fallback: if the type itself is a generic type, try to get the first generic argument
+            if (type.IsGenericType && type.GetGenericArguments().Length > 0)
             {
                 return type.GetGenericArguments().FirstOrDefault();
             }
 
+            // Fallback: recurse into base type
             if (type.BaseType != null)
             {
                 return GetElementType(type.BaseType);

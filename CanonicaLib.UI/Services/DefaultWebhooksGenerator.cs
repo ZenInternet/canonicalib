@@ -2,6 +2,7 @@
 using Microsoft.OpenApi;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
+using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
@@ -108,7 +109,7 @@ namespace Zen.CanonicaLib.UI.Services
             GeneratorContext generatorContext,
             string webhookPurpose)
         {
-            var endpointAttribute = endpointDefinition.GetCustomAttribute<OpenApiEndpointAttribute>();
+            var endpointAttribute = endpointDefinition.GetEndpointAttribute();
             if (endpointAttribute == null)
             {
                 _logger.LogWarning("Webhook endpoint {EndpointName} missing OpenApiEndpointAttribute", endpointDefinition.Name);

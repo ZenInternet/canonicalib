@@ -28,7 +28,10 @@ namespace Zen.CanonicaLib.UI.Services
 
         public OpenApiOperation GenerateOperation(MethodInfo endpointDefinition, GeneratorContext generatorContext)
         {
-            var tagAttribute = endpointDefinition.DeclaringType!.GetCustomAttribute<OpenApiTagAttribute>();
+            var tagAttribute = endpointDefinition.DeclaringType!.GetCustomAttribute<OpenApiTagAttribute>()
+                ?? endpointDefinition.DeclaringType!.GetInterfaces()
+                    .Select(i => i.GetCustomAttribute<OpenApiTagAttribute>())
+                    .FirstOrDefault(a => a != null);
 
             var tags = tagAttribute != null ? new HashSet<OpenApiTagReference>()
             {
@@ -40,7 +43,7 @@ namespace Zen.CanonicaLib.UI.Services
                 OperationId = $"{endpointDefinition.DeclaringType!.Name.Replace("I", "").Replace("Controller", "")}_{endpointDefinition.Name}",
                 Tags = tags,
                 Summary = endpointDefinition.GetXmlDocsSummary().IfEmpty(endpointDefinition.Name),
-                Description = endpointDefinition.GetXmlDocsRemarks().IfEmpty(null),
+                Description = (endpointDefinition.GetXmlDocsRemarksPreservingLineBreaks() ?? string.Empty).IfEmpty(null),
                 RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
                 Parameters = ParametersGenerator.GenerateParameters(endpointDefinition, generatorContext),
                 Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext),

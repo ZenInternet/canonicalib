@@ -57,9 +57,53 @@ namespace Zen.CanonicaLib.UI.Services
                 .Where(type => type.IsInterface && type.GetCustomAttributes(typeof(OpenApiWebhookAttribute), inherit: false).Any())
                 .ToList();
 
-        public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition) => controllerDefinition.GetMethods()
-                .Where(method => method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
-                .ToList();
+        public IList<MethodInfo> FindEndpointDefinitions(Type controllerDefinition)
+        {
+            // Collect endpoint methods from parent interfaces first.
+            var parentEndpoints = new Dictionary<string, MethodInfo>();
+            foreach (var parentInterface in controllerDefinition.GetInterfaces())
+            {
+                foreach (var method in parentInterface.GetMethods())
+                {
+                    if (method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
+                    {
+                        parentEndpoints.TryAdd(method.Name, method);
+                    }
+                }
+            }
+
+            var result = new List<MethodInfo>();
+            var seen = new HashSet<string>();
+
+            foreach (var method in controllerDefinition.GetMethods())
+            {
+                if (method.GetCustomAttributes(typeof(OpenApiEndpointAttribute), inherit: false).Any())
+                {
+                    // Method has [OpenApiEndpoint] directly — use it.
+                    result.Add(method);
+                    seen.Add(method.Name);
+                }
+                else if (parentEndpoints.ContainsKey(method.Name))
+                {
+                    // Child hides a parent endpoint (e.g. with 'new') to add
+                    // parameter-level attributes like [Example]. Prefer the
+                    // child's MethodInfo so parameter attributes are visible.
+                    result.Add(method);
+                    seen.Add(method.Name);
+                }
+            }
+
+            // Add any parent endpoints not shadowed by the child.
+            foreach (var kvp in parentEndpoints)
+            {
+                if (!seen.Contains(kvp.Key))
+                {
+                    result.Add(kvp.Value);
+                }
+            }
+
+            return result;
+        }
 
         private readonly HashSet<string> excludedInterfaces = new HashSet<string>
             {
@@ -224,7 +268,14 @@ namespace Zen.CanonicaLib.UI.Services
         public ISet<OpenApiTag> FindWebhookTags(Assembly assembly)
         {
             var tagAttributes = FindWebhookDefinitions(assembly)
-                  .Select(wd => new { TagAttribute = wd.GetCustomAttribute<OpenApiTagAttribute>(), Summary = wd.GetXmlDocsSummary() })
+                  .Select(wd => new
+                  {
+                      TagAttribute = wd.GetCustomAttribute<OpenApiTagAttribute>()
+                          ?? wd.GetInterfaces()
+                              .Select(i => i.GetCustomAttribute<OpenApiTagAttribute>())
+                              .FirstOrDefault(a => a != null),
+                      Summary = wd.GetXmlDocsSummary()
+                  })
                   .Where(tag => tag.TagAttribute != null)
                   .ToList();
 
