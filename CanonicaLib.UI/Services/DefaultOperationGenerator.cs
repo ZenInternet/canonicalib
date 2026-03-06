@@ -3,6 +3,7 @@ using Namotion.Reflection;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
+using Zen.CanonicaLib.UI.OpenApiExtensions;
 using Zen.CanonicaLib.UI.Services.Interfaces;
 
 namespace Zen.CanonicaLib.UI.Services
@@ -49,6 +50,13 @@ namespace Zen.CanonicaLib.UI.Services
                 Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext),
                 Security = SecurityGenerator.GenerateOperationSecurityRequirements(endpointDefinition)
             };
+
+            var mcpAttribute = endpointDefinition.GetCustomAttribute<OpenApiMcpAttribute>();
+            if (mcpAttribute != null)
+            {
+                operation.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+                operation.Extensions.Add("x-mcp", new McpExtension(mcpAttribute));
+            }
 
             return operation;
         }
