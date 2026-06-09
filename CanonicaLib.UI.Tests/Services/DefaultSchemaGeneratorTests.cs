@@ -268,5 +268,87 @@ namespace Zen.CanonicaLib.UI.Tests.Services
             // Name is a reference type (string), so it should not be required by default
             actualSchema.Required.Should().NotContain("name");
         }
+
+        [Fact]
+        public void GenerateSchema_ShouldSetDescription_OnScalarPropertyFromXmlSummary()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(DocumentedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var model = (OpenApiSchema)context.Document.Components!.Schemas[schemaKey];
+
+            var accountNumber = (OpenApiSchema)model.Properties["accountNumber"];
+            accountNumber.Description.Should().Be("The unique account number.");
+
+            var lineCount = (OpenApiSchema)model.Properties["lineCount"];
+            lineCount.Description.Should().Be("The number of active lines.");
+
+            // Array (inline) properties should also carry the description.
+            var roles = (OpenApiSchema)model.Properties["roles"];
+            roles.Description.Should().Be("The roles held on the account.");
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldFallBackToDescriptionAttribute_WhenNoXmlSummary()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(DocumentedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var model = (OpenApiSchema)context.Document.Components!.Schemas[schemaKey];
+
+            var fallbackOnly = (OpenApiSchema)model.Properties["fallbackOnly"];
+            fallbackOnly.Description.Should().Be("The description-attribute fallback value.");
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldNotInventDescription_ForUndocumentedProperty()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(DocumentedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var model = (OpenApiSchema)context.Document.Components!.Schemas[schemaKey];
+
+            var undocumented = (OpenApiSchema)model.Properties["undocumented"];
+            undocumented.Description.Should().BeNullOrEmpty();
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldSetReferenceDescription_OnComplexProperty()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(DocumentedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var model = (OpenApiSchema)context.Document.Components!.Schemas[schemaKey];
+
+            // Complex-typed property references another schema; the property's own summary should take
+            // precedence over the referenced type's description (OpenAPI 3.1 reference sibling).
+            var billingAddress = model.Properties["billingAddress"];
+            billingAddress.Should().BeOfType<OpenApiSchemaReference>();
+            ((OpenApiSchemaReference)billingAddress).Description.Should().Be("The billing address for the account.");
+        }
     }
 }

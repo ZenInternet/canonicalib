@@ -489,29 +489,33 @@ public class AssemblyAnalyzer
     {
         var differences = new List<MemberDifference>();
 
-        var attrs1 = member1.Attributes.ToDictionary(a => a.Name);
-        var attrs2 = member2.Attributes.ToDictionary(a => a.Name);
+        var attrs1 = member1.Attributes
+            .GroupBy(a => a.Name)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var attrs2 = member2.Attributes
+            .GroupBy(a => a.Name)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var allAttrNames = attrs1.Keys.Union(attrs2.Keys).Distinct();
 
         foreach (var attrName in allAttrNames)
         {
-            var hasAttr1 = attrs1.TryGetValue(attrName, out var attr1);
-            var hasAttr2 = attrs2.TryGetValue(attrName, out var attr2);
+            var hasAttr1 = attrs1.TryGetValue(attrName, out var attrList1);
+            var hasAttr2 = attrs2.TryGetValue(attrName, out var attrList2);
 
             if (hasAttr1 && hasAttr2)
             {
-                // Check if arguments changed
-                var args1Str = string.Join(", ", attr1!.Arguments.OrderBy(a => a));
-                var args2Str = string.Join(", ", attr2!.Arguments.OrderBy(a => a));
-                
-                if (args1Str != args2Str)
+                // Compare all instances of this attribute by their sorted argument strings
+                var argSets1 = attrList1!.Select(a => string.Join(", ", a.Arguments.OrderBy(x => x))).OrderBy(s => s).ToList();
+                var argSets2 = attrList2!.Select(a => string.Join(", ", a.Arguments.OrderBy(x => x))).OrderBy(s => s).ToList();
+
+                if (!argSets1.SequenceEqual(argSets2))
                 {
                     differences.Add(new MemberDifference
                     {
                         MemberName = member1.Name,
                         Kind = DifferenceKind.AttributeChanged,
-                        Details = $"Attribute [{attrName}] changed:\nWas: [{attrName}({args1Str})]\nNow: [{attrName}({args2Str})]"
+                        Details = $"Attribute [{attrName}] changed:\nWas: {string.Join("; ", argSets1.Select(a => $"[{attrName}({a})]"))}\nNow: {string.Join("; ", argSets2.Select(a => $"[{attrName}({a})]"))}"
                     });
                 }
             }
@@ -521,7 +525,7 @@ public class AssemblyAnalyzer
                 {
                     MemberName = member1.Name,
                     Kind = DifferenceKind.AttributeRemoved,
-                    Details = $"Attribute removed: {attr1!}"
+                    Details = $"Attribute removed: {string.Join(", ", attrList1!.Select(a => a.ToString()))}"
                 });
             }
             else
@@ -530,7 +534,7 @@ public class AssemblyAnalyzer
                 {
                     MemberName = member2.Name,
                     Kind = DifferenceKind.AttributeAdded,
-                    Details = $"Attribute added: {attr2!}"
+                    Details = $"Attribute added: {string.Join(", ", attrList2!.Select(a => a.ToString()))}"
                 });
             }
         }

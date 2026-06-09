@@ -7,6 +7,9 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>Zen.CanonicaLib.UI.Tests</RootNamespace>
+    <!-- Emit XML docs so tests can verify that property &lt;summary&gt; flows into generated schemas. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
