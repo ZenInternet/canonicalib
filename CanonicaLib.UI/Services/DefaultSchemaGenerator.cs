@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using Namotion.Reflection;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
@@ -206,7 +207,14 @@ namespace Zen.CanonicaLib.UI.Services
                     var propertyName = GetPropertyName(property);
 
                     var propertyReferenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, property.PropertyType);
-                    schema.Properties[propertyName] = CreateSchemaFromType(property.PropertyType, propertyReferenceType, generatorContext);
+                    var propertySchema = CreateSchemaFromType(property.PropertyType, propertyReferenceType, generatorContext);
+
+                    // The schema above is derived purely from the property's type, so a scalar property
+                    // (string, int, DateTime, ...) would otherwise never carry a description. Apply the
+                    // property's own documentation here so per-field descriptions appear in the spec.
+                    ApplyPropertyDescription(propertySchema, property);
+
+                    schema.Properties[propertyName] = propertySchema;
 
                     // Check if property is required (not nullable and no default value)
                     if (IsRequiredProperty(property))
@@ -357,6 +365,34 @@ namespace Zen.CanonicaLib.UI.Services
         {
             // Could be extended to check for JsonPropertyName attributes or similar
             return char.ToLowerInvariant(property.Name[0]) + property.Name[1..];
+        }
+
+        /// <summary>
+        /// Applies a property's own documentation to its generated schema. The description is taken from the
+        /// property's XML <c>&lt;summary&gt;</c>, falling back to a <see cref="DescriptionAttribute"/>. For
+        /// inline schemas (primitives, arrays) the description is set directly; for referenced schemas
+        /// (complex types, enums) a reference-level description is set so the property's intent takes
+        /// precedence over the generic type-level description (an OpenAPI 3.1 reference sibling).
+        /// </summary>
+        private static void ApplyPropertyDescription(IOpenApiSchema propertySchema, PropertyInfo property)
+        {
+            var description = property.GetXmlDocsSummary().IfEmpty(null)
+                ?? property.GetCustomAttribute<DescriptionAttribute>()?.Description;
+
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return;
+            }
+
+            switch (propertySchema)
+            {
+                case OpenApiSchema inlineSchema when string.IsNullOrEmpty(inlineSchema.Description):
+                    inlineSchema.Description = description;
+                    break;
+                case OpenApiSchemaReference reference:
+                    reference.Description = description;
+                    break;
+            }
         }
 
         private static bool IsRequiredProperty(PropertyInfo property)
