@@ -32,12 +32,15 @@ namespace Zen.CanonicaLib.UI.Services
             foreach (var document in documents)
             {
                 var description = DiscoveryService.GetDocumentContent(generatorContext.Assembly, document);
-                // if the first line of the description is a markdown #1, use that as the name, remove it from the description
-                var lines = description.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                if (lines.Length > 0 && lines[0].StartsWith("# "))
+                // if the first non-empty line of the description is a markdown H1, use that as the name and
+                // strip just that line. Blank lines elsewhere are preserved — they are significant in markdown
+                // (they separate paragraphs, lists, and fenced code blocks), so we must not collapse them.
+                var lines = description.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+                var firstContentIndex = Array.FindIndex(lines, line => !string.IsNullOrWhiteSpace(line));
+                if (firstContentIndex >= 0 && lines[firstContentIndex].StartsWith("# "))
                 {
-                    var title = lines[0].Substring(2).Trim();
-                    description = string.Join(Environment.NewLine, lines.Skip(1)).Trim();
+                    var title = lines[firstContentIndex].Substring(2).Trim();
+                    description = string.Join("\n", lines.Where((_, i) => i != firstContentIndex)).Trim('\n');
 
                     tags.Add(new OpenApiTag()
                     {
