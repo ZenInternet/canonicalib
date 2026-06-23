@@ -350,5 +350,50 @@ namespace Zen.CanonicaLib.UI.Tests.Services
             billingAddress.Should().BeOfType<OpenApiSchemaReference>();
             ((OpenApiSchemaReference)billingAddress).Description.Should().Be("The billing address for the account.");
         }
+
+        [Fact]
+        public void GetSchemaKey_ShouldReturnFullName_ForNonGenericType()
+        {
+            // Non-generic types keep their existing FullName-based key.
+            var type = typeof(SimpleEntity);
+
+            var key = GeneratorContext.GetSchemaKey(type);
+
+            key.Should().Be(type.FullName);
+        }
+
+        [Fact]
+        public void GetSchemaKey_ShouldProduceIdentifierSafeKey_ForConstructedGenericType()
+        {
+            // Type.FullName for a constructed generic is assembly-qualified and contains
+            // backticks, brackets, commas and spaces - which break downstream code generators.
+            var type = typeof(PagedResultModel<SimpleEntity>);
+
+            // Guard: confirm the raw FullName really is unsafe, so this test stays meaningful.
+            type.FullName.Should().MatchRegex("[`\\[\\], ]");
+
+            var key = GeneratorContext.GetSchemaKey(type);
+
+            key.Should().NotContainAny("`", "[", "]", ",", " ");
+            key.Should().Be($"{typeof(PagedResultModel<>).FullName!.Split('`')[0]}Of{typeof(SimpleEntity).FullName}");
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldRegisterGenericType_UnderIdentifierSafeKey()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(PagedResultModel<SimpleEntity>);
+
+            // Act
+            var schema = _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            schema.Should().BeOfType<OpenApiSchemaReference>();
+            var expectedKey = GeneratorContext.GetSchemaKey(type);
+            context.Document.Components!.Schemas.Should().ContainKey(expectedKey);
+            // No registered schema key should contain identifier-breaking characters.
+            context.Document.Components!.Schemas!.Keys.Should().OnlyContain(k => !k.Contains(' ') && !k.Contains('`'));
+        }
     }
 }
