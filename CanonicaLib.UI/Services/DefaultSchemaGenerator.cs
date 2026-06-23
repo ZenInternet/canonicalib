@@ -53,7 +53,7 @@ namespace Zen.CanonicaLib.UI.Services
 
         private static string GetSchemaKey(Type type)
         {
-            return type.FullName ?? type.Name;
+            return GeneratorContext.GetSchemaKey(type);
         }
 
         private IOpenApiSchema CreateSchemaFromType(Type type, AssemblyReferenceType referenceType, GeneratorContext generatorContext)
