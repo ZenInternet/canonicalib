@@ -85,6 +85,21 @@ namespace Zen.CanonicaLib.UI.Services
                 referenceType = _discoveryService.GetAssemblyReferenceType(generatorContext.Assembly, type);
             }
 
+            // Handle unbound generic type parameters (e.g. the T in PagedResult<T>).
+            // OpenAPI has no notion of generics, and a canonical models library is discovered
+            // standalone, so there is never a closed instantiation (PagedResult<Client>) to bind T.
+            // Without this branch T falls through to the object handler below and is emitted as a
+            // propertyless object schema, which downstream generators render as `object[]` — losing
+            // all usability. An unbound parameter can genuinely hold any type, so emit an
+            // unconstrained ("any") schema instead: it renders as `any[]`, letting consumers re-type
+            // via a thin generic wrapper. Generic parameters have a null FullName and no stable
+            // identity, so this schema is always inline and never registered as a component.
+            if (type.IsGenericParameter)
+            {
+                _logger.LogInformation("Type {TypeName} is an unbound generic parameter. Creating unconstrained (any) schema.", type.Name);
+                return schema;
+            }
+
             // Handle primitive types
             if (IsPrimitiveType(type))
             {
@@ -193,6 +208,16 @@ namespace Zen.CanonicaLib.UI.Services
             schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
             schema.Properties = new Dictionary<string, IOpenApiSchema>();
 
+            // For an open generic definition (e.g. PagedResult<T>), record the original type parameter
+            // names as a vendor extension. OpenAPI cannot express generics, so without this the type is
+            // erased to a concrete schema; a downstream generator reads x-generic-type-parameters (with
+            // the per-property x-generic-ref / x-generic-item-ref markers below) to rebuild the generic.
+            if (type.IsGenericTypeDefinition)
+            {
+                var typeParameters = type.GetGenericArguments().Select(a => a.Name).ToList();
+                GetOrCreateExtensions(schema)["x-generic-type-parameters"] = new GenericTypeParametersExtension(typeParameters);
+            }
+
             // Add the schema to context BEFORE processing properties to prevent infinite recursion
             // when a type references itself (e.g., Entity with Children property of type Entity[])
             var schemaAddedEarly = generatorContext.AddSchema(type, schema, referenceType);
@@ -213,6 +238,16 @@ namespace Zen.CanonicaLib.UI.Services
                     // (string, int, DateTime, ...) would otherwise never carry a description. Apply the
                     // property's own documentation here so per-field descriptions appear in the spec.
                     ApplyPropertyDescription(propertySchema, property);
+
+                    // If this property's type is (or is a collection of) one of the declaring type's
+                    // generic parameters, mark it so a downstream generator can restore the generic
+                    // parameter in place of the erased object/any element.
+                    var (isGenericParameter, isCollection, parameterName) = DescribeGenericParameter(property.PropertyType);
+                    if (isGenericParameter && parameterName != null && propertySchema is OpenApiSchema concretePropertySchema)
+                    {
+                        var key = isCollection ? "x-generic-item-ref" : "x-generic-ref";
+                        GetOrCreateExtensions(concretePropertySchema)[key] = new GenericParameterRefExtension(parameterName);
+                    }
 
                     schema.Properties[propertyName] = propertySchema;
 
@@ -365,6 +400,36 @@ namespace Zen.CanonicaLib.UI.Services
         {
             // Could be extended to check for JsonPropertyName attributes or similar
             return char.ToLowerInvariant(property.Name[0]) + property.Name[1..];
+        }
+
+        /// <summary>
+        /// Determines whether a property type is, or is a collection of, an unbound generic type
+        /// parameter (e.g. <c>T</c> or <c>List&lt;T&gt;</c> on <c>PagedResult&lt;T&gt;</c>). Returns the
+        /// parameter name and whether it was found behind a collection, so the caller can stamp the
+        /// appropriate vendor extension for downstream generic reconstruction.
+        /// </summary>
+        private static (bool isGenericParameter, bool isCollection, string? parameterName) DescribeGenericParameter(Type propertyType)
+        {
+            if (propertyType.IsGenericParameter)
+            {
+                return (true, false, propertyType.Name);
+            }
+
+            if (IsArrayOrCollection(propertyType))
+            {
+                var elementType = GetElementType(propertyType);
+                if (elementType != null && elementType.IsGenericParameter)
+                {
+                    return (true, true, elementType.Name);
+                }
+            }
+
+            return (false, false, null);
+        }
+
+        private static IDictionary<string, IOpenApiExtension> GetOrCreateExtensions(OpenApiSchema schema)
+        {
+            return schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
         }
 
         /// <summary>

@@ -395,5 +395,69 @@ namespace Zen.CanonicaLib.UI.Tests.Services
             // No registered schema key should contain identifier-breaking characters.
             context.Document.Components!.Schemas!.Keys.Should().OnlyContain(k => !k.Contains(' ') && !k.Contains('`'));
         }
+
+        [Fact]
+        public void GenerateSchema_ShouldEmitUnconstrainedItems_ForOpenGenericParameter()
+        {
+            // Arrange: the OPEN generic (T unbound) is what a standalone canonical models
+            // library discovers — there is no closed instantiation to bind T. The unbound T
+            // previously fell through to the object handler and was emitted as a propertyless
+            // object, which downstream renders as `object[]`.
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(PagedResultModel<>);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert: the registered schema's Items array carries an unconstrained ("any")
+            // element schema — no type, no properties, and not a component reference — so it
+            // renders as `any[]` and lets consumers re-type via a thin generic wrapper.
+            var key = GeneratorContext.GetSchemaKey(type);
+            context.Document.Components!.Schemas.Should().ContainKey(key);
+            var registered = (OpenApiSchema)context.Document.Components.Schemas[key];
+
+            registered.Properties.Should().ContainKey("items");
+            var items = (OpenApiSchema)registered.Properties["items"];
+            items.Type.Should().Be(JsonSchemaType.Array);
+
+            items.Items.Should().BeOfType<OpenApiSchema>();
+            var element = (OpenApiSchema)items.Items!;
+            element.Type.Should().BeNull();
+            element.Properties.Should().BeNullOrEmpty();
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldStampGenericVendorExtensions_ForOpenGeneric()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(PagedResultModel<>);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var key = GeneratorContext.GetSchemaKey(type);
+            var registered = (OpenApiSchema)context.Document.Components!.Schemas[key];
+
+            // Type-level: the original type parameter names are recorded so a downstream
+            // generator can rebuild `PagedResult<T>` from the erased schema.
+            registered.Extensions.Should().NotBeNull();
+            registered.Extensions.Should().ContainKey("x-generic-type-parameters");
+
+            // Property-level: the collection-of-T property is marked so the generator restores
+            // `Array<T>` in place of the erased element type.
+            var items = (OpenApiSchema)registered.Properties["items"];
+            items.Extensions.Should().NotBeNull();
+            items.Extensions.Should().ContainKey("x-generic-item-ref");
+
+            // The markers must survive serialization, since the downstream codemod reads the emitted
+            // spec JSON (not the in-memory model). Serialize via the same path used to produce specs.
+            var stringWriter = new System.IO.StringWriter();
+            context.Document.SerializeAsV31(new OpenApiJsonWriter(stringWriter));
+            var json = stringWriter.ToString();
+            json.Should().Contain("x-generic-type-parameters");
+            json.Should().Contain("x-generic-item-ref");
+        }
     }
 }
