@@ -397,6 +397,24 @@ namespace Zen.CanonicaLib.UI.Tests.Services
         }
 
         [Fact]
+        public void GenerateSchema_ShouldSetFriendlyGenericTitle_ForConstructedGenericType()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(PagedResultModel<SimpleEntity>);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert: the schema Title drives the documentation nav label (e.g. Redocly). It should read
+            // as angle-bracket generic syntax rather than the raw CLR name (PagedResultModel`1).
+            var key = GeneratorContext.GetSchemaKey(type);
+            var registered = (OpenApiSchema)context.Document.Components!.Schemas![key];
+            registered.Title.Should().Be("PagedResultModel<SimpleEntity>");
+            registered.Title.Should().NotContain("`");
+        }
+
+        [Fact]
         public void GenerateSchema_ShouldEmitUnconstrainedItems_ForOpenGenericParameter()
         {
             // Arrange: the OPEN generic (T unbound) is what a standalone canonical models

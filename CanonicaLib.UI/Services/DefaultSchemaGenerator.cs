@@ -181,7 +181,7 @@ namespace Zen.CanonicaLib.UI.Services
                 _logger.LogInformation("Type {TypeName} is an enum. Creating enum schema.", type.FullName);
                 // Create inline enum schema if not in existing schemas
                 schema.Type = JsonSchemaType.String;
-                schema.Title = type.Name;
+                schema.Title = GetDisplayName(type);
                 schema.Description = type.GetXmlDocsSummary() ?? null;
                 schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
                 schema.Enum = new List<System.Text.Json.Nodes.JsonNode>();
@@ -203,7 +203,7 @@ namespace Zen.CanonicaLib.UI.Services
 
             // Handle object types
             schema.Type = JsonSchemaType.Object;
-            schema.Title = type.Name;
+            schema.Title = GetDisplayName(type);
             schema.Description = type.GetXmlDocsSummary() ?? null;
             schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
             schema.Properties = new Dictionary<string, IOpenApiSchema>();
@@ -430,6 +430,37 @@ namespace Zen.CanonicaLib.UI.Services
         private static IDictionary<string, IOpenApiExtension> GetOrCreateExtensions(OpenApiSchema schema)
         {
             return schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+        }
+
+        /// <summary>
+        /// Builds a human-friendly display name for a type, used as the schema <c>Title</c> that drives the
+        /// left-hand navigation label in documentation viewers (e.g. Redocly). Unlike the identifier-safe
+        /// schema key, this uses angle-bracket generic syntax so a constructed generic reads as
+        /// <c>PagedResult&lt;CustomerAccountResponse&gt;</c> rather than the raw CLR name <c>PagedResult`1</c>.
+        /// Type arguments are formatted recursively so nested generics render correctly.
+        /// </summary>
+        private static string GetDisplayName(Type type)
+        {
+            var underlying = Nullable.GetUnderlyingType(type);
+            if (underlying != null)
+            {
+                type = underlying;
+            }
+
+            if (!type.IsGenericType)
+            {
+                return type.Name;
+            }
+
+            var name = type.Name;
+            var arityMarker = name.IndexOf('`');
+            if (arityMarker >= 0)
+            {
+                name = name.Substring(0, arityMarker);
+            }
+
+            var arguments = type.GetGenericArguments().Select(GetDisplayName);
+            return $"{name}<{string.Join(", ", arguments)}>";
         }
 
         /// <summary>
