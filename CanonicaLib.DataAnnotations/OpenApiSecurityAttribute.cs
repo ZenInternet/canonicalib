@@ -2,7 +2,7 @@
 
 namespace Zen.CanonicaLib.DataAnnotations
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
     public sealed class OpenApiSecurityAttribute : Attribute
     {
         public string Scheme { get; set; }
