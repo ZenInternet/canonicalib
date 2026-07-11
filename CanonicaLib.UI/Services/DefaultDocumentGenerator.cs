@@ -74,13 +74,20 @@ namespace Zen.CanonicaLib.UI.Services
                 _logger.LogDebug("Generating info section");
                 generatorContext.Document.Info = _infoGenerator.GenerateInfo(generatorContext);
 
+                _logger.LogDebug("Generating schemas section");
                 _schemasGenerator.GenerateSchemas(generatorContext);
 
                 _logger.LogDebug("Generating servers section");
-                _schemasGenerator.GenerateSchemas(generatorContext);
                 generatorContext.Document.Servers = _serversGenerator.GenerateServers(generatorContext);
 
+                _logger.LogDebug("Generating security schemes section");
                 generatorContext.Document.Components!.SecuritySchemes = _securityGenerator.GenerateSecuritySchemes(generatorContext);
+
+                var documentSecurity = _securityGenerator.GenerateDocumentSecurityRequirements(generatorContext);
+                if (documentSecurity.Count > 0)
+                {
+                    generatorContext.Document.Security = documentSecurity;
+                }
 
                 _logger.LogDebug("Generating tag groups");
                 generatorContext.Document.Tags = _tagGroupsGenerator.GenerateTags(generatorContext);
@@ -92,6 +99,9 @@ namespace Zen.CanonicaLib.UI.Services
 
                 _logger.LogDebug("Generating paths section");
                 generatorContext.Document.Paths = _pathsGenerator.GeneratePaths(generatorContext);
+
+                _logger.LogDebug("Validating security configuration");
+                _securityGenerator.ValidateSecurity(generatorContext);
 
                 _logger.LogDebug("Generating webhooks section");
                 generatorContext.Document.Webhooks = _webhooksGenerator.GenerateWebhooks(generatorContext);

@@ -48,7 +48,7 @@ namespace Zen.CanonicaLib.UI.Services
                 RequestBody = RequestBodyGenerator.GenerateRequestBody(endpointDefinition, generatorContext),
                 Parameters = ParametersGenerator.GenerateParameters(endpointDefinition, generatorContext),
                 Responses = ResponsesGenerator.GenerateResponses(endpointDefinition, generatorContext),
-                Security = SecurityGenerator.GenerateOperationSecurityRequirements(endpointDefinition)
+                Security = SecurityGenerator.GenerateOperationSecurityRequirements(endpointDefinition, generatorContext)
             };
 
             var mcpAttribute = endpointDefinition.GetCustomAttribute<OpenApiMcpAttribute>();
