@@ -270,6 +270,70 @@ namespace Zen.CanonicaLib.UI.Tests.Services
         }
 
         [Fact]
+        public void GenerateSchema_ShouldMarkRequiredProperties_ForExplicitRequiredAttribute()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(AnnotatedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var actualSchema = (OpenApiSchema)context.Document.Components.Schemas[schemaKey];
+
+            // [Required] promotes reference-typed properties (a string and a nested model) ...
+            actualSchema.Required.Should().Contain("name");
+            actualSchema.Required.Should().Contain("owner");
+            // ... a non-nullable value type is required inherently ...
+            actualSchema.Required.Should().Contain("percentage");
+            // ... but an un-annotated nullable reference type is not.
+            actualSchema.Required.Should().NotContain("optional");
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldProjectValidationAttributes_OntoSchemaFacets()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(AnnotatedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var actualSchema = (OpenApiSchema)context.Document.Components.Schemas[schemaKey];
+            OpenApiSchema Prop(string name) => (OpenApiSchema)actualSchema.Properties[name];
+
+            // [StringLength(50, MinimumLength = 3)]
+            Prop("slug").MaxLength.Should().Be(50);
+            Prop("slug").MinLength.Should().Be(3);
+
+            // [Range(1, 100)]
+            Prop("percentage").Minimum.Should().Be("1");
+            Prop("percentage").Maximum.Should().Be("100");
+
+            // [RegularExpression]
+            Prop("lowerOnly").Pattern.Should().Be("^[a-z]+$");
+
+            // [EmailAddress] / [Url] -> format
+            Prop("email").Format.Should().Be("email");
+            Prop("website").Format.Should().Be("uri");
+
+            // [MaxLength(5)] on a collection -> maxItems (not maxLength)
+            Prop("tags").MaxItems.Should().Be(5);
+            Prop("tags").MaxLength.Should().BeNull();
+
+            // [ReadOnly(true)]
+            Prop("computedCode").ReadOnly.Should().BeTrue();
+
+            // [DefaultValue(10)]
+            Prop("pageSize").Default!.GetValue<int>().Should().Be(10);
+        }
+
+        [Fact]
         public void GenerateSchema_ShouldSetDescription_OnScalarPropertyFromXmlSummary()
         {
             // Arrange
