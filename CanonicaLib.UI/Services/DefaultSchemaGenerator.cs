@@ -4,6 +4,7 @@ using Microsoft.OpenApi;
 using Namotion.Reflection;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
@@ -238,6 +239,11 @@ namespace Zen.CanonicaLib.UI.Services
                     // (string, int, DateTime, ...) would otherwise never carry a description. Apply the
                     // property's own documentation here so per-field descriptions appear in the spec.
                     ApplyPropertyDescription(propertySchema, property);
+
+                    // Honour System.ComponentModel.DataAnnotations validation attributes (StringLength,
+                    // Range, RegularExpression, EmailAddress, etc.) by projecting them onto the schema's
+                    // JSON Schema validation facets.
+                    ApplyValidationAttributes(propertySchema, property);
 
                     // If this property's type is (or is a collection of) one of the declaring type's
                     // generic parameters, mark it so a downstream generator can restore the generic
@@ -491,18 +497,150 @@ namespace Zen.CanonicaLib.UI.Services
             }
         }
 
+        /// <summary>
+        /// Projects the standard <c>System.ComponentModel.DataAnnotations</c> validation attributes on a
+        /// property onto the equivalent JSON Schema validation facets of its generated schema. Only inline
+        /// schemas carry these facets — a property whose type is a referenced component (a complex model or
+        /// enum) has no scalar facets to constrain, so it is left untouched. Attributes with no clean
+        /// OpenAPI equivalent (e.g. <c>[Compare]</c>, <c>[CreditCard]</c>, custom <c>ValidationAttribute</c>s)
+        /// are intentionally ignored.
+        /// </summary>
+        private static void ApplyValidationAttributes(IOpenApiSchema propertySchema, PropertyInfo property)
+        {
+            if (propertySchema is not OpenApiSchema schema)
+            {
+                return;
+            }
+
+            var isArray = schema.Type is JsonSchemaType.Array;
+
+            // [StringLength(max, MinimumLength = min)] -> maxLength / minLength
+            var stringLength = property.GetCustomAttribute<StringLengthAttribute>();
+            if (stringLength != null)
+            {
+                schema.MaxLength = stringLength.MaximumLength;
+                if (stringLength.MinimumLength > 0)
+                {
+                    schema.MinLength = stringLength.MinimumLength;
+                }
+            }
+
+            // [MinLength] / [MaxLength] -> minLength/maxLength for strings, minItems/maxItems for collections
+            var minLength = property.GetCustomAttribute<MinLengthAttribute>();
+            if (minLength != null)
+            {
+                if (isArray)
+                {
+                    schema.MinItems = minLength.Length;
+                }
+                else
+                {
+                    schema.MinLength = minLength.Length;
+                }
+            }
+
+            var maxLength = property.GetCustomAttribute<MaxLengthAttribute>();
+            if (maxLength != null)
+            {
+                if (isArray)
+                {
+                    schema.MaxItems = maxLength.Length;
+                }
+                else
+                {
+                    schema.MaxLength = maxLength.Length;
+                }
+            }
+
+            // [Range(min, max)] -> minimum / maximum (JSON Schema numerics are expressed as strings here)
+            var range = property.GetCustomAttribute<RangeAttribute>();
+            if (range != null)
+            {
+                schema.Minimum = ToInvariantString(range.Minimum);
+                schema.Maximum = ToInvariantString(range.Maximum);
+            }
+
+            // [RegularExpression] -> pattern
+            var pattern = property.GetCustomAttribute<RegularExpressionAttribute>()?.Pattern;
+            if (!string.IsNullOrEmpty(pattern))
+            {
+                schema.Pattern = pattern;
+            }
+
+            // Format-implying attributes -> format (never overwrite a format the type already set, e.g. uuid/date-time)
+            if (string.IsNullOrEmpty(schema.Format))
+            {
+                if (property.GetCustomAttribute<EmailAddressAttribute>() != null)
+                {
+                    schema.Format = "email";
+                }
+                else if (property.GetCustomAttribute<UrlAttribute>() != null)
+                {
+                    schema.Format = "uri";
+                }
+            }
+
+            // [ReadOnly(true)] -> readOnly
+            if (property.GetCustomAttribute<ReadOnlyAttribute>()?.IsReadOnly == true)
+            {
+                schema.ReadOnly = true;
+            }
+
+            // [DefaultValue] -> default
+            var defaultValue = property.GetCustomAttribute<DefaultValueAttribute>()?.Value;
+            if (defaultValue != null)
+            {
+                var node = CreateDefaultNode(defaultValue);
+                if (node != null)
+                {
+                    schema.Default = node;
+                }
+            }
+        }
+
+        private static string? ToInvariantString(object? value)
+        {
+            return value == null
+                ? null
+                : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private static System.Text.Json.Nodes.JsonNode? CreateDefaultNode(object value)
+        {
+            return value switch
+            {
+                string s => System.Text.Json.Nodes.JsonValue.Create(s),
+                bool b => System.Text.Json.Nodes.JsonValue.Create(b),
+                int i => System.Text.Json.Nodes.JsonValue.Create(i),
+                long l => System.Text.Json.Nodes.JsonValue.Create(l),
+                short sh => System.Text.Json.Nodes.JsonValue.Create(sh),
+                byte by => System.Text.Json.Nodes.JsonValue.Create(by),
+                double d => System.Text.Json.Nodes.JsonValue.Create(d),
+                float f => System.Text.Json.Nodes.JsonValue.Create(f),
+                decimal m => System.Text.Json.Nodes.JsonValue.Create(m),
+                Enum e => System.Text.Json.Nodes.JsonValue.Create(e.ToString()),
+                _ => System.Text.Json.Nodes.JsonValue.Create(ToInvariantString(value))
+            };
+        }
+
         private static bool IsRequiredProperty(PropertyInfo property)
         {
-            // Simple logic - could be enhanced to check for Required attributes or nullable reference types
+            // An explicit [Required] attribute marks the property required regardless of its CLR type.
+            // This is the only way to require a reference-type property (e.g. a string or a nested
+            // model), since nullable-reference-type annotations are not visible via plain reflection.
+            if (property.GetCustomAttribute<RequiredAttribute>() != null)
+            {
+                return true;
+            }
+
             var propertyType = property.PropertyType;
 
-            // Value types (except nullable) are typically required
+            // Value types (except Nullable<T>) are inherently required — they can never be absent.
             if (propertyType.IsValueType && !IsNullableType(propertyType))
             {
                 return true;
             }
 
-            // Could add more sophisticated logic here based on attributes
             return false;
         }
     }
