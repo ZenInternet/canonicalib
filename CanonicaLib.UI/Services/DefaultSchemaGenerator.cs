@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Zen.CanonicaLib.DataAnnotations;
 using Zen.CanonicaLib.UI.Extensions;
 using Zen.CanonicaLib.UI.OpenApiExtensions;
@@ -402,9 +403,22 @@ namespace Zen.CanonicaLib.UI.Services
             return null;
         }
 
+        /// <summary>
+        /// Gets the name a property is documented under in the schema. This is the single source of the
+        /// property's schema name, so the properties map and the required list always agree.
+        /// </summary>
+        /// <remarks>
+        /// An explicit <see cref="JsonPropertyNameAttribute"/> wins, because that is the name
+        /// System.Text.Json writes on the wire; otherwise the CLR name is camel-cased.
+        /// </remarks>
         private static string GetPropertyName(PropertyInfo property)
         {
-            // Could be extended to check for JsonPropertyName attributes or similar
+            var jsonPropertyName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
+            if (!string.IsNullOrEmpty(jsonPropertyName))
+            {
+                return jsonPropertyName;
+            }
+
             return char.ToLowerInvariant(property.Name[0]) + property.Name[1..];
         }
 

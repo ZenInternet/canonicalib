@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First security-focused test coverage (`DefaultSecurityGeneratorTests`), including a regression guard that the operation security requirement serialises the scheme reference (not `{}`).
 
 ### Fixed
+- `DefaultSchemaGenerator` now honours `[JsonPropertyName]` when naming schema properties. Previously every property name was camel-cased from the CLR name, so a property such as `[JsonPropertyName("CorrelationId")] Guid CorrelationId` was documented as `correlationId` while System.Text.Json writes `CorrelationId`. The `required` list uses the same name. Properties without the attribute are camel-cased as before.
 - `DefaultSchemaGenerator` now marks a property `required` when it carries `[Required]`. Previously only non-nullable value types were treated as required, so a `[Required]` reference-typed property (e.g. a `string` or nested model) was silently omitted from the schema's `required` array.
 - Operation security requirements now serialise correctly. `OpenApiSecuritySchemeReference` is constructed with the generator's document, so a `[OpenApiSecurity(...)]`-annotated operation renders `"security": [ { "oauth2": [ ... ] } ]` instead of an empty `"security": [ {} ]`.
 - Removed a duplicate `GenerateSchemas` call in `DefaultDocumentGenerator`.
