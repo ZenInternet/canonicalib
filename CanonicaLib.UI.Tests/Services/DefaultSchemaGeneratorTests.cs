@@ -293,6 +293,71 @@ namespace Zen.CanonicaLib.UI.Tests.Services
         }
 
         [Fact]
+        public void GenerateSchema_ShouldUseJsonPropertyName_WhenAttributePresent()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(JsonNamedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var actualSchema = (OpenApiSchema)context.Document.Components.Schemas[schemaKey];
+
+            // [JsonPropertyName] is what System.Text.Json writes, so the schema must use it verbatim ...
+            actualSchema.Properties.Should().ContainKey("CorrelationId");
+            actualSchema.Properties.Should().NotContainKey("correlationId");
+            actualSchema.Properties.Should().ContainKey("display_name");
+            actualSchema.Properties.Should().NotContainKey("displayName");
+
+            // ... and the required list must use the same name as the properties map.
+            actualSchema.Required.Should().Contain("CorrelationId");
+            actualSchema.Required.Should().NotContain("correlationId");
+            actualSchema.Required.Should().Contain("display_name");
+            actualSchema.Required.Should().NotContain("displayName");
+            actualSchema.Required.Should().BeSubsetOf(actualSchema.Properties.Keys);
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldCamelCasePropertyName_WhenNoJsonPropertyName()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(JsonNamedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var actualSchema = (OpenApiSchema)context.Document.Components.Schemas[schemaKey];
+
+            actualSchema.Properties.Should().ContainKey("plainValue");
+            actualSchema.Properties.Should().NotContainKey("PlainValue");
+        }
+
+        [Fact]
+        public void GenerateSchema_ShouldKeepName_WhenJsonPropertyNameMatchesCamelCase()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var type = typeof(JsonNamedModel);
+
+            // Act
+            _schemaGenerator.GenerateSchema(type, context);
+
+            // Assert
+            var schemaKey = type.FullName ?? type.Name;
+            var actualSchema = (OpenApiSchema)context.Document.Components.Schemas[schemaKey];
+
+            actualSchema.Properties.Should().ContainKey("reference");
+            actualSchema.Properties.Should().NotContainKey("Reference");
+            actualSchema.Properties.Should().HaveCount(4);
+        }
+
+        [Fact]
         public void GenerateSchema_ShouldProjectValidationAttributes_OntoSchemaFacets()
         {
             // Arrange
