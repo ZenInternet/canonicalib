@@ -72,6 +72,14 @@ public class AssemblyAnalyzer
     
     private class CustomAssemblyLoadContext : AssemblyLoadContext
     {
+        // Simple names of the assemblies on the runtime's trusted platform list.
+        private static readonly HashSet<string> FrameworkAssemblies = new(
+            ((AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string) ?? string.Empty)
+                .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+                .Select(Path.GetFileNameWithoutExtension)
+                .OfType<string>(),
+            StringComparer.OrdinalIgnoreCase);
+
         private readonly Dictionary<string, string> _assemblyPaths;
 
         public CustomAssemblyLoadContext(string name, List<string> assemblyPaths) : base(name, isCollectible: true)
@@ -91,6 +99,15 @@ public class AssemblyAnalyzer
 
         protected override Assembly? Load(AssemblyName assemblyName)
         {
+            // An assembly the runtime ships (System.Text.Json, System.Memory, ...) comes from the
+            // default context. A package's copy of it targets older frameworks: loading that copy
+            // beside the runtime's own core types breaks type loading, e.g. Utf8JsonWriter's
+            // DisposeAsync in System.Text.Json 9.0.0 when a package has a JsonConverter.
+            if (assemblyName.Name != null && FrameworkAssemblies.Contains(assemblyName.Name))
+            {
+                return null;
+            }
+
             // Try to load from our list of dependencies
             if (assemblyName.Name != null && _assemblyPaths.TryGetValue(assemblyName.Name, out var path))
             {

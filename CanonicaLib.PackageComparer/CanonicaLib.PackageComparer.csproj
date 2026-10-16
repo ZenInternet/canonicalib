@@ -10,6 +10,10 @@
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>canonicalib-comparer</ToolCommandName>
+    <!-- Run as a tool on the newest installed runtime, not only .NET 8. Packages that reference a
+         newer framework assembly than the runtime ships (Zen.Contract references System.Text.Json
+         9.0) cannot be loaded for comparison on an older runtime. -->
+    <RollForward>LatestMajor</RollForward>
 		<RootNamespace>Zen.CanonicaLib.PackageComparer</RootNamespace>
 		<AssemblyName>Zen.CanonicaLib.PackageComparer</AssemblyName>
     
