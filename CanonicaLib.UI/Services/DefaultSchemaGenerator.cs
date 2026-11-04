@@ -187,13 +187,9 @@ namespace Zen.CanonicaLib.UI.Services
                 schema.Description = type.GetXmlDocsSummary() ?? null;
                 schema.Comment = type.GetXmlDocsRemarksPreservingLineBreaks() ?? null;
                 schema.Enum = new List<System.Text.Json.Nodes.JsonNode>();
-                foreach (var enumValue in Enum.GetValues(type))
+                foreach (var wireValue in GetEnumWireValues(type))
                 {
-                    var enumString = enumValue.ToString();
-                    if (enumString != null)
-                    {
-                        schema.Enum.Add(System.Text.Json.Nodes.JsonValue.Create(enumString));
-                    }
+                    schema.Enum.Add(System.Text.Json.Nodes.JsonValue.Create(wireValue));
                 }
                 if (generatorContext.AddSchema(type, schema, referenceType))
                 {
@@ -287,6 +283,38 @@ namespace Zen.CanonicaLib.UI.Services
                 return new OpenApiSchemaReference(schemaKey);
             }
             return schema;
+        }
+
+        /// <summary>
+        /// The values an enum is written as on the wire, in declaration order: a member's
+        /// <c>[JsonStringEnumMemberName]</c> name when it has one, otherwise its CLR name.
+        /// Members that share an underlying value are listed once, under the first declared.
+        /// </summary>
+        /// <remarks>
+        /// The attribute is matched by name because it ships with System.Text.Json 9.0, which
+        /// .NET 8 does not include. Contract assemblies that use it bring their own copy.
+        /// </remarks>
+        private static IEnumerable<string> GetEnumWireValues(Type enumType)
+        {
+            var seen = new HashSet<object>();
+            foreach (var field in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                var value = field.GetValue(null);
+                if (value == null || !seen.Add(value))
+                {
+                    continue;
+                }
+
+                yield return GetJsonStringEnumMemberName(field) ?? field.Name;
+            }
+        }
+
+        private static string? GetJsonStringEnumMemberName(FieldInfo field)
+        {
+            var attribute = field.GetCustomAttributes(inherit: false)
+                .FirstOrDefault(a => a.GetType().Name == "JsonStringEnumMemberNameAttribute");
+
+            return attribute?.GetType().GetProperty("Name")?.GetValue(attribute) as string;
         }
 
         private static bool IsDictionary(Type type)
