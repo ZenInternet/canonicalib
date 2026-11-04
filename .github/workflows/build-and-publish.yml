@@ -175,6 +175,9 @@ jobs:
   publish-prerelease:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # GitHub releases
+      id-token: write  # OIDC token for nuget.org trusted publishing
     # Publish prereleases for: next branch pushes, PRs to next, and feature branch pushes
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/next') ||
@@ -188,17 +191,26 @@ jobs:
         name: nuget-packages-${{ github.run_id }}
         path: ./packages
     
+    - name: NuGet login (OIDC to a short-lived API key)
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    
     - name: Publish prerelease to NuGet.org
       run: |
         echo "Publishing prerelease packages version ${{ needs.build.outputs.version }}"
         dotnet nuget push ./packages/*.nupkg \
-          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
 
   publish-rc:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # GitHub releases
+      id-token: write  # OIDC token for nuget.org trusted publishing
     # Publish RC versions for PRs to main
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     
@@ -311,17 +323,26 @@ jobs:
           -p:PackageVersion=${{ needs.build.outputs.version }} \
           -p:MinVerSkip=true
     
+    - name: NuGet login (OIDC to a short-lived API key)
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    
     - name: Publish RC to NuGet.org
       run: |
         echo "Publishing RC packages version ${{ needs.build.outputs.version }}"
         dotnet nuget push ./packages/*.nupkg \
-          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # GitHub releases
+      id-token: write  # OIDC token for nuget.org trusted publishing
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
@@ -445,9 +466,15 @@ jobs:
           -p:PackageVersion=${{ needs.build.outputs.version }} \
           -p:MinVerSkip=true
     
+    - name: NuGet login (OIDC to a short-lived API key)
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    
     - name: Publish to NuGet.org
       run: |
         dotnet nuget push ./packages/*.nupkg \
-          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
