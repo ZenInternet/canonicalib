@@ -606,5 +606,45 @@ namespace Zen.CanonicaLib.UI.Tests.Services
             json.Should().Contain("x-generic-type-parameters");
             json.Should().Contain("x-generic-item-ref");
         }
+
+        [Fact]
+        public void GenerateSchema_ShouldListEnumWireValues_FromJsonStringEnumMemberName()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var enumType = typeof(WireNamedEnum);
+
+            // Act
+            _schemaGenerator.GenerateSchema(enumType, context);
+
+            // Assert
+            var schemaKey = enumType.FullName ?? enumType.Name;
+            var schema = (OpenApiSchema)context.Document.Components!.Schemas[schemaKey];
+            schema.Enum!.Select(v => v!.GetValue<string>()).Should().Equal(
+                "data-collection", "version_conflict", "Plain", "unknown");
+        }
+
+        [Fact]
+        public void GenerateSchema_EnumWireValues_ShouldMatchWhatSystemTextJsonWrites()
+        {
+            // Arrange
+            var context = new GeneratorContext(_testAssembly);
+            var enumType = typeof(WireNamedEnum);
+            var options = new System.Text.Json.JsonSerializerOptions();
+            options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+            // Act
+            _schemaGenerator.GenerateSchema(enumType, context);
+
+            // Assert
+            var schemaKey = enumType.FullName ?? enumType.Name;
+            var schema = (OpenApiSchema)context.Document.Components!.Schemas[schemaKey];
+            var documented = schema.Enum!.Select(v => v!.GetValue<string>()).ToList();
+            foreach (var value in new[] { WireNamedEnum.DataCollection, WireNamedEnum.VersionConflict, WireNamedEnum.Plain, WireNamedEnum.Unknown })
+            {
+                var written = System.Text.Json.JsonSerializer.Serialize(value, options).Trim('"');
+                documented.Should().Contain(written);
+            }
+        }
     }
 }
